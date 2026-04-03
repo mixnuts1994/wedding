@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes">
+  <title>Wedding Gallery</title>
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:italic@0;1&family=Noto+Serif+JP:wght@300;500&display=swap" rel="stylesheet">
+  <style>
+    :root { --gold: #c5a059; --light-gold: #e3d3b0; --bg: #fdfbf7; --text: #333333; --white: #ffffff; }
+    body { font-family: 'Noto Serif JP', serif; margin: 0; background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }
+    .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+    header { text-align: center; padding: 50px 0 30px; position: relative; }
+    h1 { font-family: 'Libre Baskerville', serif; font-size: 2.4rem; color: var(--gold); letter-spacing: 4px; margin: 0; font-style: italic; }
+    .subtitle { font-size: 14px; letter-spacing: 2px; color: var(--text); margin-top: 10px; opacity: 0.7; }
+    .settings-trigger { position: absolute; top: 15px; right: 15px; font-size: 18px; cursor: pointer; color: var(--gold); opacity: 0.5; }
+    .tabs { display: flex; justify-content: center; gap: 30px; margin: 30px 0; }
+    .tab { padding: 12px 30px; font-size: 15px; border-bottom: 1px solid transparent; cursor: pointer; transition: 0.4s; letter-spacing: 1px; }
+    .tab.active { color: var(--gold); border-bottom: 1px solid var(--gold); font-weight: 500; }
+    .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    select, input { padding: 12px; border: 1px solid #e0e0e0; border-radius: 4px; font-family: inherit; background: var(--white); color: var(--text); outline: none;}
+    .gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .gallery-item { aspect-ratio: 1; position: relative; overflow: hidden; border-radius: 2px; background: #f0f0f0; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
+    .gallery-item img { width: 100%; height: 100%; object-fit: cover; transition: 0.6s; pointer-events: none;}
+    .gallery-item:hover img { transform: scale(1.08); }
+    .video-icon { position: absolute; top: 10px; right: 10px; width: 24px; height: 24px; background: rgba(0,0,0,0.4); border-radius: 50%; display: flex; justify-content: center; align-items: center; }
+    .video-icon::after { content: ''; border-left: 8px solid white; border-top: 5px solid transparent; border-bottom: 5px solid transparent; margin-left: 2px; }
+    .uploader-tag { position: absolute; bottom: 0; background: linear-gradient(transparent, rgba(0,0,0,0.6)); color: white; width: 100%; font-size: 10px; padding: 10px 0 5px; text-align: center; }
+    .panel { background: var(--white); padding: 40px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); display: none; flex-direction: column; gap: 20px; align-items: center; }
+    .panel input, .panel select { width: 100%; max-width: 350px; border: 1px solid var(--light-gold); box-sizing: border-box;}
+    .btn { padding: 15px 40px; border-radius: 4px; border: none; cursor: pointer; font-size: 14px; transition: 0.3s; font-family: inherit; letter-spacing: 2px; }
+    .btn-gold { background: var(--gold); color: white; width: 100%; max-width: 350px;}
+    .btn-gold:disabled { background: #ccc; cursor: not-allowed; }
+    .btn-outline { border: 1px solid var(--gold); background: transparent; color: var(--gold); width: 100%; max-width: 350px;}
+    .progress-container { width: 100%; max-width: 350px; display: none; text-align: center;}
+    .progress-bar { height: 4px; background: #f0f0f0; border-radius: 2px; overflow: hidden; margin-top: 15px; }
+    .progress-fill { height: 100%; background: var(--gold); width: 0%; transition: 0.4s; }
+    #modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(253, 251, 247, 0.98); display: none; z-index: 100; flex-direction: column; touch-action: none; }
+    .modal-header { display: flex; justify-content: space-between; padding: 20px; color: var(--gold); z-index: 10;}
+    .modal-content { flex: 1; display: flex; justify-content: center; align-items: center; overflow: hidden; position: relative; }
+    #modal-img { max-width: 100%; max-height: 100%; object-fit: contain; cursor: grab; touch-action: none; user-select: none; -webkit-user-drag: none; transition: transform 0.1s ease-out; }
+    #modal-img:active { cursor: grabbing; }
+    #modal-video { width: 100%; height: 80%; border: none; display: none; max-width: 800px; background: #000;}
+    .modal-footer { padding: 30px; display: flex; justify-content: center; gap: 20px; z-index: 10;}
+    #toast { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); background: var(--text); color: white; padding: 12px 30px; border-radius: 4px; z-index: 1000; display: none; font-size: 13px; box-shadow: 0 10px 20px rgba(0,0,0,0.2); white-space: nowrap;}
+    #delete-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; z-index: 200; align-items: center; justify-content: center; }
+    .del-box { background: white; padding: 30px; border-radius: 8px; text-align: center; width: 280px; }
+    .fade-in { animation: fadeIn 0.4s ease-in-out forwards; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @media (max-width: 600px) { .gallery { grid-template-columns: repeat(3, 1fr); gap: 5px; } h1 { font-size: 1.8rem; } }
+  </style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<div class="container fade-in">
+  <header>
+    <div class="settings-trigger" onclick="toggleSettings()">⚙️</div>
+    <h1>Wedding Gallery</h1>
+    <div class="subtitle">2026.04.18 | Our Special Day</div>
+  </header>
+
+  <div class="tabs">
+    <div id="tab-view" class="tab active" onclick="switchTab('view')">Gallery</div>
+    <div id="tab-upload" class="tab" onclick="switchTab('upload')">Share Photos</div>
+  </div>
+
+  <div id="settings-section" class="panel">
+    <h3 style="color:var(--gold); margin:0;">卓名の編集</h3>
+    <textarea id="table-list-input" style="width:100%; height:80px; padding:10px;"></textarea>
+    <button class="btn btn-gold" onclick="saveTables()">設定を更新する</button>
+  </div>
+
+  <div id="view-section">
+    <div class="toolbar">
+      <select id="filter-table" onchange="renderGallery()"><option value="ALL">全ての卓</option></select>
+      <div style="cursor:pointer; color:var(--gold); font-size:13px;" onclick="loadData()">最新に更新 🔄</div>
+    </div>
+    <div id="gallery" class="gallery">読み込み中...</div>
+    <button id="load-more-btn" class="btn btn-outline" style="width:100%; margin-top:30px; display:none;" onclick="loadMore()">もっと見る</button>
+  </div>
+
+  <div id="upload-section" class="panel">
+    <p style="color:var(--gold); margin-bottom:10px;">素敵な思い出を届けてください</p>
+    <select id="upload-table"></select>
+    <input type="text" id="uploader-name" placeholder="お名前・ニックネーム">
+    <input type="password" id="delete-pw" placeholder="削除用パスワード">
+    
+    <button class="btn btn-outline" onclick="document.getElementById('file-input').click()">📸 写真・動画を選択</button>
+    <input type="file" id="file-input" multiple accept="image/*,video/*" style="display:none" onchange="updateFileCount()">
+    
+    <div id="file-count-label" style="font-size:13px; color:var(--gold);"></div>
+    <button id="submit-btn" class="btn btn-gold" onclick="startUpload()">お写真を届ける</button>
+
+    <div id="progress-container" class="progress-container">
+      <div id="progress-text" style="font-size:12px; margin-bottom:5px;">準備中...</div>
+      <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
+    </div>
+  </div>
+</div>
+
+<div id="modal">
+  <div class="modal-header">
+    <div id="modal-info"></div>
+    <div onclick="closeModal()" style="font-size:28px; cursor:pointer;">✕</div>
+  </div>
+  <div class="modal-content" id="zoom-area">
+    <button onclick="prevImg()" style="position:absolute; left:10px; background:none; border:none; font-size:30px; color:var(--gold); z-index:20;">‹</button>
+    <img id="modal-img">
+    <iframe id="modal-video" allow="autoplay"></iframe>
+    <button onclick="nextImg()" style="position:absolute; right:10px; background:none; border:none; font-size:30px; color:var(--gold); z-index:20;">›</button>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-outline" id="dl-btn" style="width:auto; padding:10px 20px;">保存</button>
+    <button class="btn" style="color:#e57373; background:none; width:auto; padding:10px;" onclick="openDelete()">削除</button>
+  </div>
+</div>
+
+<div id="delete-modal">
+  <div class="del-box">
+    <p style="margin-bottom:20px;">削除パスワード</p>
+    <input type="password" id="del-pw-input" style="width:100%; margin-bottom:20px; padding:10px; box-sizing:border-box;">
+    <button class="btn btn-gold" onclick="executeDelete()" style="width:100%;">削除を確定</button>
+    <p onclick="closeDelete()" style="margin-top:15px; font-size:12px; color:#888; cursor:pointer;">キャンセル</p>
+  </div>
+</div>
+
+<script>
+  // ★いただいたURLを確実に設定しました！
+  const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxypBbMdRcPVtSd6lYbSWh16bgQxZzzfk-969wsAD3w5YYxL43l_UMRq3GW_-HnY86BCQ/exec";
+
+  // GASと通信するための関数
+  async function callGAS(payload) {
+    try {
+      const response = await fetch(GAS_API_URL, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+        headers: {
+          'Content-Type': 'text/plain', // GASへのCORS対策
+        }
+      });
+      return await response.json();
+    } catch (error) {
+      console.error("通信エラー:", error);
+      throw error;
+    }
+  }
+
+  let allFiles = []; let filteredFiles = []; let showCount = 0; let modalIdx = 0;
+  let scale = 1; let translateX = 0; let translateY = 0; let isDragging = false; let startX = 0; let startY = 0;
+
+  window.onload = () => { initTables(); loadData(); setupViewerControls(); };
+
+  function showToast(m) {
+    const t = document.getElementById('toast');
+    t.innerText = m; t.style.display = 'block';
+    setTimeout(() => t.style.display = 'none', 3000);
+  }
+
+  function toggleSettings() {
+    const s = document.getElementById('settings-section');
+    s.style.display = (s.style.display === 'flex') ? 'none' : 'flex';
+  }
+
+  async function initTables() {
+    try {
+      const res = await callGAS({ action: 'getTableNames' });
+      if (!res.tables) return;
+      const tables = res.tables;
+      document.getElementById('table-list-input').value = tables.join(',');
+      const f = document.getElementById('filter-table');
+      const u = document.getElementById('upload-table');
+      f.innerHTML = '<option value="ALL">全ての卓</option>';
+      u.innerHTML = '<option value="" disabled selected>卓名を選択</option>';
+      tables.forEach(t => { f.innerHTML += `<option value="${t}">${t}</option>`; u.innerHTML += `<option value="${t}">${t}</option>`; });
+    } catch(e) { console.error(e); }
+  }
+
+  async function saveTables() {
+    const arr = document.getElementById('table-list-input').value.split(',').map(s=>s.trim()).filter(s=>s);
+    try {
+      await callGAS({ action: 'saveTableNames', tables: arr });
+      showToast("設定を更新しました"); toggleSettings(); initTables();
+    } catch(e) { showToast("保存に失敗しました"); }
+  }
+
+  function switchTab(t) {
+    document.getElementById('view-section').style.display = t === 'view' ? 'block' : 'none';
+    document.getElementById('upload-section').style.display = t === 'upload' ? 'flex' : 'none';
+    document.getElementById('tab-view').classList.toggle('active', t === 'view');
+    document.getElementById('tab-upload').classList.toggle('active', t === 'upload');
+  }
+
+  async function loadData() {
+    document.getElementById('gallery').innerHTML = '<p style="grid-column:1/-1; text-align:center;">お写真を集めています...</p>';
+    try {
+      const res = await callGAS({ action: 'getAllFiles' });
+      allFiles = res.files || [];
+      renderGallery();
+    } catch(e) { document.getElementById('gallery').innerHTML = '<p style="grid-column:1/-1; text-align:center; color:#e57373;">通信エラーが発生しました。再読み込みしてください。</p>'; }
+  }
+
+  function renderGallery() {
+    const filter = document.getElementById('filter-table').value;
+    filteredFiles = (filter === "ALL") ? allFiles : allFiles.filter(f => f.table === filter);
+    showCount = 0;
+    document.getElementById('gallery').innerHTML = '';
+    if(filteredFiles.length === 0) document.getElementById('gallery').innerHTML = '<p style="grid-column:1/-1; text-align:center;">お写真がありません</p>';
+    else loadMore();
+  }
+
+  function loadMore() {
+    const g = document.getElementById('gallery');
+    const end = Math.min(showCount + 24, filteredFiles.length);
+    for(let i = showCount; i < end; i++) {
+      const f = filteredFiles[i];
+      const div = document.createElement('div');
+      div.className = 'gallery-item'; div.onclick = () => openModal(i);
+      div.innerHTML = `<img src="${f.thumbnail}" onerror="this.onerror=null; this.src='https://drive.google.com/thumbnail?id=${f.id}&sz=w800';">${f.mime.includes('video')?'<div class="video-icon"></div>':''}<div class="uploader-tag">${f.uploader}</div>`;
+      g.appendChild(div);
+    }
+    showCount = end;
+    document.getElementById('load-more-btn').style.display = showCount < filteredFiles.length ? 'block' : 'none';
+  }
+
+  function updateFileCount() {
+    const count = document.getElementById('file-input').files.length;
+    document.getElementById('file-count-label').innerText = count > 0 ? `${count} 枚の思い出を選択中` : '';
+  }
+
+  async function startUpload() {
+    const input = document.getElementById('file-input');
+    const table = document.getElementById('upload-table').value;
+    const name = document.getElementById('uploader-name').value;
+    const pw = document.getElementById('delete-pw').value;
+    
+    if(!table || !name || !pw || input.files.length === 0) { showToast("全項目を入力してください"); return; }
+
+    document.getElementById('submit-btn').disabled = true;
+    document.getElementById('progress-container').style.display = 'block';
+
+    try {
+      const resFolder = await callGAS({ action: 'prepareFolder', tableName: table, uploaderName: name });
+      const folderId = resFolder.folderId;
+
+      const files = Array.from(input.files);
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        document.getElementById('progress-text').innerText = `${files.length}枚中 ${i+1}枚目を送信中...`;
+        
+        await new Promise((res, rej) => {
+          const reader = new FileReader();
+          reader.onload = async e => {
+            try {
+              await callGAS({
+                action: 'uploadFileFast',
+                base64Data: e.target.result,
+                fileName: file.name,
+                mimeType: file.type,
+                folderId: folderId,
+                uploaderName: name,
+                password: pw,
+                tableName: table
+              });
+              document.getElementById('progress-fill').style.width = Math.floor(((i+1)/files.length)*100) + '%';
+              res();
+            } catch(err) { rej(err); }
+          };
+          reader.readAsDataURL(file);
+        });
+        await new Promise(r => setTimeout(r, 1000)); // 1秒待機
+      }
+      showToast("完了しました！");
+      input.value = ""; updateFileCount();
+      document.getElementById('progress-container').style.display = 'none';
+      document.getElementById('submit-btn').disabled = false;
+      loadData();
+      switchTab('view');
+    } catch(e) {
+      showToast("通信エラーが発生しました。");
+      document.getElementById('submit-btn').disabled = false;
+      document.getElementById('progress-container').style.display = 'none';
+    }
+  }
+
+  function updateTransform() {
+    const img = document.getElementById('modal-img');
+    img.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+  }
+
+  function openModal(idx) {
+    modalIdx = idx; 
+    scale = 1; translateX = 0; translateY = 0;
+    updateTransform();
+    
+    const f = filteredFiles[idx];
+    document.getElementById('modal').style.display = 'flex';
+    document.getElementById('modal-info').innerText = `${f.uploader} 様 (${f.table})`;
+    document.getElementById('dl-btn').onclick = () => window.open(f.downloadUrl);
+    
+    const img = document.getElementById('modal-img');
+    const vid = document.getElementById('modal-video');
+
+    if(f.mime.includes('video')) {
+      img.style.display = 'none'; vid.style.display = 'block'; vid.src = f.previewUrl;
+    } else {
+      vid.style.display = 'none'; vid.src = ""; img.style.display = 'block'; 
+      img.src = f.thumbnail;
+      img.onerror = () => { img.src = `https://drive.google.com/thumbnail?id=${f.id}&sz=w800`; };
+    }
+  }
+
+  function closeModal() { document.getElementById('modal').style.display = 'none'; document.getElementById('modal-video').src=""; }
+  function nextImg() { if(modalIdx < filteredFiles.length-1) openModal(modalIdx+1); }
+  function prevImg() { if(modalIdx > 0) openModal(modalIdx-1); }
+
+  function setupViewerControls() {
+    const img = document.getElementById('modal-img');
+    const area = document.getElementById('zoom-area');
+
+    area.addEventListener('wheel', e => {
+      e.preventDefault();
+      const zoomSpeed = 0.15;
+      if (e.deltaY < 0) scale += zoomSpeed;
+      else scale -= zoomSpeed;
+      scale = Math.min(Math.max(1, scale), 5);
+      if (scale === 1) { translateX = 0; translateY = 0; }
+      updateTransform();
+    }, { passive: false });
+
+    function startDrag(clientX, clientY) {
+      if (scale <= 1) return;
+      isDragging = true;
+      startX = clientX - translateX;
+      startY = clientY - translateY;
+      img.style.transition = 'none';
+    }
+
+    function drag(clientX, clientY) {
+      if (!isDragging) return;
+      translateX = clientX - startX;
+      translateY = clientY - startY;
+      updateTransform();
+    }
+
+    function endDrag() { isDragging = false; img.style.transition = 'transform 0.1s ease-out'; }
+
+    img.addEventListener('mousedown', e => { e.preventDefault(); startDrag(e.clientX, e.clientY); });
+    window.addEventListener('mousemove', e => drag(e.clientX, e.clientY));
+    window.addEventListener('mouseup', endDrag);
+
+    let initDist = 0;
+    area.addEventListener('touchstart', e => { if (e.touches.length === 1) startDrag(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
+    area.addEventListener('touchmove', e => {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        const d = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+        if (initDist === 0) initDist = d;
+        else {
+          scale *= d / initDist; 
+          scale = Math.min(Math.max(1, scale), 5);
+          if (scale === 1) { translateX = 0; translateY = 0; }
+          updateTransform(); initDist = d;
+        }
+      } else if (e.touches.length === 1 && isDragging && scale > 1) {
+        e.preventDefault(); drag(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    }, { passive: false });
+    area.addEventListener('touchend', () => { initDist = 0; endDrag(); });
+  }
+
+  function openDelete() { document.getElementById('delete-modal').style.display = 'flex'; }
+  function closeDelete() { document.getElementById('delete-modal').style.display = 'none'; }
+  async function executeDelete() {
+    const pw = document.getElementById('del-pw-input').value;
+    try {
+      const res = await callGAS({ action: 'deleteFile', fileId: filteredFiles[modalIdx].id, password: pw });
+      if(res.success) { showToast("削除しました"); location.reload(); }
+      else showToast(res.message);
+    } catch(e) { showToast("通信エラーが発生しました"); }
+  }
+</script>
+</body>
+</html>
