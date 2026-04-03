@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes">
+  <meta name="robots" content="noindex, nofollow">
   <title>Wedding Gallery</title>
   <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:italic@0;1&family=Noto+Serif+JP:wght@300;500&display=swap" rel="stylesheet">
   <style>
@@ -31,9 +32,17 @@
     .btn-gold { background: var(--gold); color: white; width: 100%; max-width: 350px;}
     .btn-gold:disabled { background: #ccc; cursor: not-allowed; }
     .btn-outline { border: 1px solid var(--gold); background: transparent; color: var(--gold); width: 100%; max-width: 350px;}
+    
+    /* 鼓動アニメーション */
     .progress-container { width: 100%; max-width: 350px; display: none; text-align: center;}
-    .progress-bar { height: 4px; background: #f0f0f0; border-radius: 2px; overflow: hidden; margin-top: 15px; }
-    .progress-fill { height: 100%; background: var(--gold); width: 0%; transition: 0.4s; }
+    .progress-bar { height: 6px; background: #f0f0f0; border-radius: 3px; overflow: hidden; margin-top: 15px; }
+    .progress-fill { 
+      height: 100%; background: var(--gold); width: 5%; 
+      transition: width 0.4s ease;
+      animation: pulse 2s infinite; 
+    }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+
     #modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(253, 251, 247, 0.98); display: none; z-index: 100; flex-direction: column; touch-action: none; }
     .modal-header { display: flex; justify-content: space-between; padding: 20px; color: var(--gold); z-index: 10;}
     .modal-content { flex: 1; display: flex; justify-content: center; align-items: center; overflow: hidden; position: relative; }
@@ -62,7 +71,7 @@
 
   <div class="tabs">
     <div id="tab-view" class="tab active" onclick="switchTab('view')">Gallery</div>
-    <div id="tab-upload" class="tab" onclick="switchTab('upload')">Share Photos</div>
+    <div id="tab-upload" class="tab" onclick="switchTab('upload')">写真を送る</div>
   </div>
 
   <div id="settings-section" class="panel">
@@ -81,16 +90,16 @@
   </div>
 
   <div id="upload-section" class="panel">
-    <p style="color:var(--gold); margin-bottom:10px;">素敵な思い出を届けてください</p>
+    <p style="color:var(--gold); margin-bottom:10px;">素敵な写真や動画をシェアしてください</p>
     <select id="upload-table"></select>
     <input type="text" id="uploader-name" placeholder="お名前・ニックネーム">
     <input type="password" id="delete-pw" placeholder="削除用パスワード">
     
-    <button class="btn btn-outline" onclick="document.getElementById('file-input').click()">📸 写真・動画を選択</button>
+    <button class="btn btn-outline" onclick="document.getElementById('file-input').click()">📸 写真・動画を選ぶ</button>
     <input type="file" id="file-input" multiple accept="image/*,video/*" style="display:none" onchange="updateFileCount()">
     
     <div id="file-count-label" style="font-size:13px; color:var(--gold);"></div>
-    <button id="submit-btn" class="btn btn-gold" onclick="startUpload()">お写真を届ける</button>
+    <button id="submit-btn" class="btn btn-gold" onclick="startUpload()">送信する</button>
 
     <div id="progress-container" class="progress-container">
       <div id="progress-text" style="font-size:12px; margin-bottom:5px;">準備中...</div>
@@ -126,18 +135,17 @@
 </div>
 
 <script>
-  // ★いただいたURLを確実に設定しました！
+  // ★いただいた新しいURLを組み込み済みです
   const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxypBbMdRcPVtSd6lYbSWh16bgQxZzzfk-969wsAD3w5YYxL43l_UMRq3GW_-HnY86BCQ/exec";
 
-  // GASと通信するための関数
+  // CORS対応のfetch通信
   async function callGAS(payload) {
     try {
       const response = await fetch(GAS_API_URL, {
         method: 'POST',
-        body: JSON.stringify(payload),
-        headers: {
-          'Content-Type': 'text/plain', // GASへのCORS対策
-        }
+        redirect: 'follow', 
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify(payload)
       });
       return await response.json();
     } catch (error) {
@@ -192,7 +200,7 @@
   }
 
   async function loadData() {
-    document.getElementById('gallery').innerHTML = '<p style="grid-column:1/-1; text-align:center;">お写真を集めています...</p>';
+    document.getElementById('gallery').innerHTML = '<p style="grid-column:1/-1; text-align:center;">写真を読み込んでいます...</p>';
     try {
       const res = await callGAS({ action: 'getAllFiles' });
       allFiles = res.files || [];
@@ -205,7 +213,7 @@
     filteredFiles = (filter === "ALL") ? allFiles : allFiles.filter(f => f.table === filter);
     showCount = 0;
     document.getElementById('gallery').innerHTML = '';
-    if(filteredFiles.length === 0) document.getElementById('gallery').innerHTML = '<p style="grid-column:1/-1; text-align:center;">お写真がありません</p>';
+    if(filteredFiles.length === 0) document.getElementById('gallery').innerHTML = '<p style="grid-column:1/-1; text-align:center;">写真がありません</p>';
     else loadMore();
   }
 
@@ -225,7 +233,7 @@
 
   function updateFileCount() {
     const count = document.getElementById('file-input').files.length;
-    document.getElementById('file-count-label').innerText = count > 0 ? `${count} 枚の思い出を選択中` : '';
+    document.getElementById('file-count-label').innerText = count > 0 ? `${count} 枚の写真を選択中` : '';
   }
 
   async function startUpload() {
@@ -241,6 +249,7 @@
 
     try {
       const resFolder = await callGAS({ action: 'prepareFolder', tableName: table, uploaderName: name });
+      if(!resFolder.success) throw new Error("フォルダ作成失敗");
       const folderId = resFolder.folderId;
 
       const files = Array.from(input.files);
@@ -252,7 +261,7 @@
           const reader = new FileReader();
           reader.onload = async e => {
             try {
-              await callGAS({
+              const uploadRes = await callGAS({
                 action: 'uploadFileFast',
                 base64Data: e.target.result,
                 fileName: file.name,
@@ -262,15 +271,18 @@
                 password: pw,
                 tableName: table
               });
-              document.getElementById('progress-fill').style.width = Math.floor(((i+1)/files.length)*100) + '%';
+              if(!uploadRes.success) throw new Error("アップロード失敗");
+              
+              const percent = 5 + Math.floor(((i+1)/files.length)*95);
+              document.getElementById('progress-fill').style.width = percent + '%';
               res();
             } catch(err) { rej(err); }
           };
           reader.readAsDataURL(file);
         });
-        await new Promise(r => setTimeout(r, 1000)); // 1秒待機
+        await new Promise(r => setTimeout(r, 1000));
       }
-      showToast("完了しました！");
+      showToast("送信が完了しました！");
       input.value = ""; updateFileCount();
       document.getElementById('progress-container').style.display = 'none';
       document.getElementById('submit-btn').disabled = false;
@@ -329,7 +341,6 @@
     }, { passive: false });
 
     function startDrag(clientX, clientY) {
-      if (scale <= 1) return;
       isDragging = true;
       startX = clientX - translateX;
       startY = clientY - translateY;
@@ -345,12 +356,20 @@
 
     function endDrag() { isDragging = false; img.style.transition = 'transform 0.1s ease-out'; }
 
-    img.addEventListener('mousedown', e => { e.preventDefault(); startDrag(e.clientX, e.clientY); });
+    img.addEventListener('mousedown', e => { e.preventDefault(); if (scale > 1) startDrag(e.clientX, e.clientY); });
     window.addEventListener('mousemove', e => drag(e.clientX, e.clientY));
     window.addEventListener('mouseup', endDrag);
 
     let initDist = 0;
-    area.addEventListener('touchstart', e => { if (e.touches.length === 1) startDrag(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
+    let touchStartX = 0;
+
+    area.addEventListener('touchstart', e => { 
+      if (e.touches.length === 1) {
+        touchStartX = e.touches[0].clientX; 
+        if (scale > 1) startDrag(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    }, { passive: false });
+
     area.addEventListener('touchmove', e => {
       if (e.touches.length === 2) {
         e.preventDefault();
@@ -366,7 +385,19 @@
         e.preventDefault(); drag(e.touches[0].clientX, e.touches[0].clientY);
       }
     }, { passive: false });
-    area.addEventListener('touchend', () => { initDist = 0; endDrag(); });
+    
+    area.addEventListener('touchend', e => { 
+      initDist = 0; endDrag(); 
+      
+      // スワイプで画像切り替え（1倍の時のみ）
+      if (scale === 1 && e.changedTouches.length === 1) {
+        const touchEndX = e.changedTouches[0].clientX;
+        const diffX = touchEndX - touchStartX;
+        
+        if (diffX > 50) { prevImg(); } 
+        else if (diffX < -50) { nextImg(); } 
+      }
+    });
   }
 
   function openDelete() { document.getElementById('delete-modal').style.display = 'flex'; }
