@@ -41,7 +41,7 @@
 
     .special-notice {
       background: var(--light-gold); border: 1px solid var(--gold); border-radius: 8px; padding: 20px; width: 100%; max-width: 350px;
-      margin-bottom: 10px; text-align: center; font-size: 13px; line-height: 1.6; color: var(--gold);
+      margin-bottom: 20px; text-align: center; font-size: 13px; line-height: 1.6; color: var(--gold);
     }
     .notice-btn {
       display: inline-block; margin-top: 10px; padding: 8px 15px; background: var(--gold); color: white;
@@ -71,8 +71,6 @@
     .fade-in { animation: fadeIn 0.4s ease-in-out forwards; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     @media (max-width: 600px) { .gallery { grid-template-columns: repeat(3, 1fr); gap: 5px; } h1 { font-size: 1.8rem; } }
-    
-    #safari-warning { display: none; color: #d32f2f; font-size: 13px; margin-bottom: 15px; text-align: center; font-weight: bold; background: #ffebee; padding: 10px; border-radius: 4px;}
   </style>
 </head>
 <body>
@@ -107,16 +105,13 @@
   </div>
 
   <div id="upload-section" class="panel">
+    
     <div class="special-notice">
-      iPhoneのSafariをお使いの方、動画を送りたい方、<br>
-      バックグラウンドで送信したい方は<br>
-      こちらからアップロードをお願いします♪<br>
+      🎥 <strong>動画</strong>を送りたい方<br>
+      📦 <strong>大量の写真を一気に</strong>送りたい方<br>
+      バックグラウンドで送信したい方はこちらが便利です♪<br>
       <a href="https://drive.google.com/drive/folders/15j0MjASh3rIAX9bXNIuZM-VkRYfZ_8zW?usp=drive_link" target="_blank" class="notice-btn">Google Driveを開く</a>
     </div>
-
-    <p style="color:var(--gold); font-size: 13px; margin: 0;">Chrome / LINEをお使いの方はこちら</p>
-    
-    <div id="safari-warning">Safariではアップロードできません。<br>上の「Google Driveを開く」ボタンをご利用ください。</div>
     
     <select id="upload-table"></select>
     <input type="text" id="uploader-name" placeholder="お名前・ニックネーム">
@@ -162,10 +157,9 @@
 </div>
 
 <script>
-  // 最新のGASのデプロイURL
+  // 完全に組み込み済みのGASデプロイURL
   const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyRfIJU14TkP6EcM9pbf7BeLZQc5zPOTrYfmwuAkggcs8Uz6m0dWT28Q_bqXTIHfZenyw/exec";
 
-  // GitHubからGASへの通信関数
   async function callGASJson(payload) {
     const response = await fetch(GAS_API_URL, {
       method: 'POST',
@@ -179,18 +173,7 @@
   let allFiles = []; let filteredFiles = []; let showCount = 0; let modalIdx = 0;
   let scale = 1; let translateX = 0; let translateY = 0; let isDragging = false; let startX = 0; let startY = 0;
 
-  window.onload = () => { initTables(); loadData(); setupViewerControls(); checkSafari(); };
-
-  function checkSafari() {
-    const userAgent = navigator.userAgent;
-    const isSafari = /^((?!chrome|android|crios|fxios|line).)*safari/i.test(userAgent);
-    if (isSafari) {
-      document.getElementById('safari-warning').style.display = 'block';
-      document.getElementById('submit-btn').disabled = true;
-      document.getElementById('submit-btn').innerText = "Safariでは送信できません";
-      document.getElementById('submit-btn').style.background = "#ccc";
-    }
-  }
+  window.onload = () => { initTables(); loadData(); setupViewerControls(); };
 
   function showToast(m, isError = false) {
     const t = document.getElementById('toast');
@@ -269,7 +252,6 @@
     document.getElementById('file-count-label').innerText = count > 0 ? `${count} 枚のお写真を選択中` : '';
   }
 
-  // GitHub用 送信ロジック
   async function startUpload() {
     const input = document.getElementById('file-input');
     const table = document.getElementById('upload-table').value;
@@ -282,7 +264,6 @@
     document.getElementById('progress-container').style.display = 'block';
 
     try {
-      // 1. フォルダの準備
       const prepRes = await callGASJson({ action: 'prepareFolder', tableName: table, uploaderName: name });
       if (!prepRes.success) throw new Error("フォルダの準備に失敗しました");
       const folderId = prepRes.folderId;
@@ -292,7 +273,6 @@
         const file = files[i];
         document.getElementById('progress-text').innerText = `${files.length}枚中 ${i+1}枚目を送信中...`;
         
-        // 画像をBase64に変換
         const base64Str = await new Promise((res, rej) => {
           const reader = new FileReader();
           reader.onload = e => res(e.target.result.split(',')[1]);
@@ -300,7 +280,6 @@
           reader.readAsDataURL(file);
         });
 
-        // 2. データの送信
         const uploadRes = await callGASJson({
           action: 'uploadFileFast',
           base64Data: base64Str,
@@ -315,7 +294,7 @@
         if (!uploadRes.success) throw new Error("送信に失敗しました");
         
         document.getElementById('progress-fill').style.width = Math.floor(((i+1)/files.length)*100) + '%';
-        await new Promise(r => setTimeout(r, 1000)); // 連続エラー防止
+        await new Promise(r => setTimeout(r, 1000));
       }
       
       showToast("送信が完了しました！");
