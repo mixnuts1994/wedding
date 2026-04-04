@@ -131,7 +131,7 @@
 
 <script>
   // ★いただいた最新のURLです！
-  const GAS_API_URL = "https://script.google.com/macros/s/AKfycbz1SVQO0WTKSKyqGeT7o54DCNZoRcE66xbulGBVVAojdb7aLhfg2w6TEK85la60P497kg/exec";
+  const GAS_API_URL = "https://script.google.com/macros/s/AKfycbx5NHwAzQpeivTVupLZ9FYFcdypEAGVNr8t02XIJakUOgqc_oDLmQDrVCwp287sChta0Q/exec";
 
   // JSONデータの送受信（一覧取得・フォルダ作成用）
   async function callGASJson(payload) {
@@ -361,7 +361,6 @@
     const img = document.getElementById('modal-img');
     const area = document.getElementById('zoom-area');
 
-    // ★ PCキーボード操作 (左右キーで移動、Escで閉じる)
     window.addEventListener('keydown', e => {
       if (document.getElementById('modal').style.display === 'flex') {
         if (e.key === 'ArrowRight') nextImg();
