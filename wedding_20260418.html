@@ -39,7 +39,6 @@
     .panel { background: var(--white); padding: 40px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); display: none; flex-direction: column; gap: 20px; align-items: center; }
     .panel input, .panel select { width: 100%; max-width: 350px; border: 1px solid var(--light-gold); box-sizing: border-box;}
 
-    /* ★ ボタンのデザイン（改行しても綺麗に見えるように調整） */
     .btn { padding: 15px 20px; border-radius: 4px; border: none; cursor: pointer; font-size: 14px; transition: 0.3s; font-family: inherit; letter-spacing: 1px; font-weight: bold;}
     .btn-gold { background: var(--gold); color: white; width: 100%; max-width: 350px; display: flex; flex-direction: column; justify-content: center; align-items: center; line-height: 1.4;}
     .btn-gold:disabled { background: #ccc; cursor: not-allowed; }
@@ -251,6 +250,7 @@
     document.getElementById('load-more-btn').style.display = showCount < filteredFiles.length ? 'block' : 'none';
   }
 
+  // ★ Google Driveアプリ起動への確実な誘導処理
   async function startDriveUpload() {
     const table = document.getElementById('upload-table').value;
     const name = document.getElementById('uploader-name').value;
@@ -263,23 +263,33 @@
     const newWin = window.open('', '_blank');
     if (!newWin) {
       showToast("ポップアップがブロックされました。\nブラウザの設定を確認してください。", true);
-      // ★ 裏側の文字も「大量」を削除
       btn.disabled = false; btn.innerHTML = "<span>📁 Google Driveで登録</span><span style='font-size: 11px; font-weight: normal; margin-top: 4px;'>（動画・バックグラウンド登録はこちら）</span>";
       return;
     }
-    newWin.document.write('<p style="text-align:center; margin-top:50px; font-family:sans-serif; color:#c5a059;">あなた専用のフォルダを準備しています...<br>そのままお待ちください。</p>');
+    newWin.document.write('<meta name="viewport" content="width=device-width, initial-scale=1"><p style="text-align:center; margin-top:50px; font-family:sans-serif; color:#c5a059;">あなた専用のフォルダを準備しています...<br>そのままお待ちください。</p>');
 
     try {
       const prepRes = await callGASJson({ action: 'prepareFolder', tableName: table, uploaderName: name });
       if (!prepRes.success) throw new Error("フォルダの準備に失敗しました");
       
-      newWin.location.href = `https://drive.google.com/drive/folders/${prepRes.folderId}?usp=drive_link`;
-      showToast("Drive用のフォルダを開きました！");
+      // ★ 確実にアプリを起動させるためのクリック画面
+      newWin.document.body.innerHTML = `
+        <div style="text-align:center; margin-top:40px; font-family:sans-serif;">
+          <p style="color:#c5a059; margin-bottom:20px; font-weight:bold;">あなた専用のフォルダが完成しました！</p>
+          <a href="https://drive.google.com/drive/folders/${prepRes.folderId}?usp=drive_link" 
+             style="display:inline-block; padding:15px 30px; background:#c5a059; color:#fff; text-decoration:none; border-radius:5px; font-weight:bold;">
+             📁 Google Driveアプリを開く
+          </a>
+          <p style="font-size:12px; color:#666; margin-top:20px; line-height:1.6;">
+            ※ボタンを押すとアプリが立ち上がります<br>
+            ※アプリ内で「＋」ボタンから追加してください
+          </p>
+        </div>
+      `;
     } catch(e) {
       newWin.close();
       showToast("フォルダの作成に失敗しました。\n" + e.message, true);
     } finally {
-      // ★ エラー時や成功後のボタン復旧処理も「大量」を削除
       btn.disabled = false; btn.innerHTML = "<span>📁 Google Driveで登録</span><span style='font-size: 11px; font-weight: normal; margin-top: 4px;'>（動画・バックグラウンド登録はこちら）</span>";
     }
   }
@@ -374,7 +384,16 @@
     const f = filteredFiles[idx];
     document.getElementById('modal').style.display = 'flex';
     document.getElementById('modal-info').innerText = `${f.uploader} 様 (${f.table})`;
-    document.getElementById('dl-btn').onclick = () => window.open(f.downloadUrl);
+    
+    // ★ ダウンロードボタンの強制保存処理（裏技）
+    document.getElementById('dl-btn').onclick = () => {
+      const a = document.createElement('a');
+      a.href = f.downloadUrl;
+      a.download = 'wedding_photo';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    };
     
     const img = document.getElementById('modal-img');
     const vid = document.getElementById('modal-video');
@@ -393,21 +412,42 @@
   function setupViewerControls() {
     const img = document.getElementById('modal-img');
     const area = document.getElementById('zoom-area');
+    
+    // ★ PC用キーボード操作（← →）
+    window.addEventListener('keydown', e => {
+      if (document.getElementById('modal').style.display === 'flex') {
+        if (e.key === 'ArrowRight') nextImg();
+        if (e.key === 'ArrowLeft') prevImg();
+        if (e.key === 'Escape') closeModal();
+      }
+    });
+
     area.addEventListener('wheel', e => {
       e.preventDefault();
       scale += (e.deltaY < 0) ? 0.15 : -0.15; scale = Math.min(Math.max(1, scale), 5);
       if (scale === 1) { translateX = 0; translateY = 0; } updateTransform();
     }, { passive: false });
+    
     function startDrag(clientX, clientY) {
       if (scale <= 1) return; 
       isDragging = true; startX = clientX - translateX; startY = clientY - translateY; img.style.transition = 'none'; 
     }
     function drag(clientX, clientY) { if (!isDragging) return; translateX = clientX - startX; translateY = clientY - startY; updateTransform(); }
     function endDrag() { isDragging = false; img.style.transition = 'transform 0.1s ease-out'; }
+    
     img.addEventListener('mousedown', e => { e.preventDefault(); startDrag(e.clientX, e.clientY); });
     window.addEventListener('mousemove', e => drag(e.clientX, e.clientY)); window.addEventListener('mouseup', endDrag);
+    
     let initDist = 0;
-    area.addEventListener('touchstart', e => { if (e.touches.length === 1) startDrag(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
+    let swipeStartX = 0; // ★ スワイプ検知用
+    
+    area.addEventListener('touchstart', e => { 
+      if (e.touches.length === 1) { 
+        startDrag(e.touches[0].clientX, e.touches[0].clientY); 
+        swipeStartX = e.touches[0].clientX;
+      } 
+    }, { passive: false });
+    
     area.addEventListener('touchmove', e => {
       if (e.touches.length === 2) { 
         e.preventDefault();
@@ -416,7 +456,19 @@
         else { scale *= d / initDist; scale = Math.min(Math.max(1, scale), 5); if (scale === 1) { translateX = 0; translateY = 0; } updateTransform(); initDist = d; }
       } else if (e.touches.length === 1 && isDragging && scale > 1) { e.preventDefault(); drag(e.touches[0].clientX, e.touches[0].clientY); }
     }, { passive: false });
-    area.addEventListener('touchend', () => { initDist = 0; endDrag(); });
+    
+    area.addEventListener('touchend', e => { 
+      initDist = 0; 
+      endDrag(); 
+      // ★ スワイプでの画像切り替え処理
+      if (scale === 1 && swipeStartX > 0) {
+         const swipeEndX = e.changedTouches[0].clientX;
+         const diffX = swipeStartX - swipeEndX;
+         if (diffX > 50) nextImg(); // 左へスワイプ＝次へ
+         else if (diffX < -50) prevImg(); // 右へスワイプ＝前へ
+      }
+      swipeStartX = 0;
+    });
   }
 
   function openDelete() { document.getElementById('delete-modal').style.display = 'flex'; }
