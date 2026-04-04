@@ -8,7 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:italic@0;1&family=Noto+Serif+JP:wght@300;500&display=swap" rel="stylesheet">
   <style>
     :root { --gold: #c5a059; --light-gold: #f4ece0; --bg: #fdfbf7; --text: #333333; --white: #ffffff; }
-    body { font-family: 'Noto Serif JP', serif; margin: 0; background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }
+    body { font-family: 'Noto Serif JP', serif; margin: 0; background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
     .container { max-width: 900px; margin: 0 auto; padding: 20px; }
     
     header { text-align: center; padding: 50px 0 30px; position: relative; }
@@ -53,15 +53,16 @@
 
     .warning-text { color: #d32f2f; font-size: 12px; font-weight: bold; margin-top: 15px; display: none; background: #ffebee; padding: 10px; border-radius: 4px; line-height: 1.5;}
 
-    #modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(253, 251, 247, 0.98); display: none; z-index: 100; flex-direction: column; touch-action: none; }
-    .modal-header { display: flex; justify-content: space-between; padding: 20px; color: var(--gold); z-index: 10;}
-    .modal-content { flex: 1; display: flex; justify-content: center; align-items: center; overflow: hidden; position: relative; }
+    /* ★ 3面スライダー用の構造 */
+    #modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(253, 251, 247, 0.98); display: none; z-index: 100; flex-direction: column; touch-action: none; overflow: hidden;}
+    .modal-header { display: flex; justify-content: space-between; padding: 20px; color: var(--gold); z-index: 20; background: rgba(253, 251, 247, 0.8);}
     
-    /* スワイプ中にはみ出さないよう工夫 */
-    #modal-img { max-width: 100%; max-height: 100%; object-fit: contain; cursor: grab; touch-action: none; user-select: none; -webkit-user-drag: none; transition: transform 0.1s ease-out; }
-    #modal-video { width: 100%; height: 100%; border: none; display: none; background: #000;}
+    .modal-content { flex: 1; display: flex; align-items: center; position: relative; width: 100%; overflow: hidden; }
     
-    .modal-footer { padding: 30px; display: flex; justify-content: center; gap: 20px; z-index: 10;}
+    .slider-track { display: flex; width: 300%; height: 100%; position: absolute; left: -100%; will-change: transform; }
+    .slide { width: 33.3333%; height: 100%; display: flex; justify-content: center; align-items: center; flex-shrink: 0; overflow: hidden;}
+    
+    .modal-footer { padding: 30px; display: flex; justify-content: center; gap: 20px; z-index: 20; background: rgba(253, 251, 247, 0.8);}
     #toast { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); background: var(--text); color: white; padding: 12px 30px; border-radius: 4px; z-index: 1000; display: none; font-size: 13px; box-shadow: 0 10px 20px rgba(0,0,0,0.2); white-space: pre-wrap; line-height:1.5;}
     #delete-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; z-index: 200; align-items: center; justify-content: center; }
     .del-box { background: white; padding: 30px; border-radius: 8px; text-align: center; width: 280px; }
@@ -132,13 +133,18 @@
 <div id="modal">
   <div class="modal-header">
     <div id="modal-info"></div>
-    <div onclick="closeModal()" style="font-size:28px; cursor:pointer;">✕</div>
+    <div onclick="closeModal()" style="font-size:28px; cursor:pointer; padding: 5px 15px; z-index: 20;">✕</div>
   </div>
   <div class="modal-content" id="zoom-area">
-    <button onclick="prevImg()" style="position:absolute; left:10px; background:none; border:none; font-size:30px; color:var(--gold); z-index:20;">‹</button>
-    <img id="modal-img">
-    <iframe id="modal-video" allow="autoplay" allowfullscreen></iframe>
-    <button onclick="nextImg()" style="position:absolute; right:10px; background:none; border:none; font-size:30px; color:var(--gold); z-index:20;">›</button>
+    <button id="btn-prev" onclick="slideToPrev()" style="position:absolute; left:10px; background:none; border:none; font-size:40px; color:var(--gold); z-index:20; padding:10px; display:none;">‹</button>
+    
+    <div class="slider-track" id="slider-track">
+      <div class="slide" id="slide-prev"></div>
+      <div class="slide" id="slide-curr"></div>
+      <div class="slide" id="slide-next"></div>
+    </div>
+
+    <button id="btn-next" onclick="slideToNext()" style="position:absolute; right:10px; background:none; border:none; font-size:40px; color:var(--gold); z-index:20; padding:10px; display:none;">›</button>
   </div>
   <div class="modal-footer">
     <button class="btn btn-outline" id="dl-btn" style="width:auto; padding:10px 20px;">保存</button>
@@ -156,7 +162,7 @@
 </div>
 
 <script>
-  // 完全に組み込み済みのURL
+  // ★★★ 超重要：ここに新しく発行したGASのURLを貼り付けます ★★★
   const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyRfIJU14TkP6EcM9pbf7BeLZQc5zPOTrYfmwuAkggcs8Uz6m0dWT28Q_bqXTIHfZenyw/exec";
 
   async function callGASJson(payload) {
@@ -167,7 +173,10 @@
   }
 
   let allFiles = []; let filteredFiles = []; let showCount = 0; let modalIdx = 0;
-  let scale = 1; let translateX = 0; let translateY = 0; let isDragging = false; let startX = 0; let startY = 0;
+  let scale = 1; let imgTranslateX = 0; let imgTranslateY = 0; 
+  let isDraggingImg = false; let imgStartX = 0; let imgStartY = 0;
+  
+  let trackTranslateX = 0; let isSwipingTrack = false; let swipeStartX = 0;
 
   window.onload = () => { 
     initTables(); loadData(); setupViewerControls(); 
@@ -249,7 +258,6 @@
     document.getElementById('load-more-btn').style.display = showCount < filteredFiles.length ? 'block' : 'none';
   }
 
-  // ★ Google Drive アプリへの自動移行（LINEブラウザ対応）
   async function startDriveUpload() {
     const table = document.getElementById('upload-table').value;
     const name = document.getElementById('uploader-name').value;
@@ -272,18 +280,15 @@
       
       const driveUrl = `https://drive.google.com/drive/folders/${prepRes.folderId}?usp=drive_link`;
       
-      // ★ 自動でURLに移行（別タブがブロックされていれば同じ画面を強制的に移行）
       if (newWin && !newWin.closed) {
         newWin.location.href = driveUrl;
       } else {
         window.location.href = driveUrl;
       }
-      
     } catch(e) {
       if (newWin) newWin.close();
       showToast("フォルダの作成に失敗しました。\n" + e.message, true);
     } finally {
-      // 成功した場合も画面が戻ってきた時用にボタンを復旧しておく
       setTimeout(() => {
         btn.disabled = false; btn.innerHTML = "<span>📁 Google Driveで登録</span><span style='font-size: 11px; font-weight: normal; margin-top: 4px;'>（動画・バックグラウンド登録はこちら）</span>";
       }, 2000);
@@ -305,12 +310,10 @@
     }
 
     localStorage.setItem('uploadInterrupted', 'true');
-
     document.getElementById('browser-btn').disabled = true;
     document.getElementById('drive-btn').disabled = true;
     document.getElementById('progress-container').style.display = 'block';
     document.getElementById('upload-warning').style.display = 'block';
-
     document.getElementById('progress-fill').style.width = '10%';
 
     try {
@@ -345,19 +348,16 @@
         
         const progress = 10 + Math.floor(((i+1)/files.length) * 90);
         document.getElementById('progress-fill').style.width = progress + '%';
-        
         await new Promise(r => setTimeout(r, 1000)); 
       }
       
       showToast("送信が完了しました！");
       localStorage.removeItem('uploadInterrupted');
-      
       input.value = "";
       document.getElementById('progress-container').style.display = 'none';
       document.getElementById('upload-warning').style.display = 'none';
       document.getElementById('browser-btn').disabled = false;
       document.getElementById('drive-btn').disabled = false;
-      
       loadData(); switchTab('view');
       
     } catch(e) {
@@ -370,21 +370,28 @@
     }
   }
 
-  function updateTransform() {
-    const img = document.getElementById('modal-img');
-    img.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+  // ★ 3面スライダーのレンダリング処理
+  function getSlideContent(idx, isCurrent) {
+    if (idx < 0 || idx >= filteredFiles.length) return "";
+    const f = filteredFiles[idx];
+    if (f.mime.includes('video')) {
+      return `<iframe src="${f.previewUrl}" style="width:100%; height:100%; border:none; background:#000;" allow="autoplay" allowfullscreen></iframe>`;
+    } else {
+      return `<img src="${f.thumbnail}" ${isCurrent ? 'id="modal-img"' : ''} style="max-width:100%; max-height:100%; object-fit:contain; pointer-events:none; user-select:none;">`;
+    }
   }
 
-  function openModal(idx) {
-    modalIdx = idx; scale = 1; translateX = 0; translateY = 0; 
-    
-    const img = document.getElementById('modal-img');
-    const vid = document.getElementById('modal-video');
-    img.style.transition = 'none'; // 切り替え時のリセット
-    updateTransform();
-    
-    const f = filteredFiles[idx];
-    document.getElementById('modal').style.display = 'flex';
+  function renderSlides() {
+    const track = document.getElementById('slider-track');
+    document.getElementById('slide-prev').innerHTML = getSlideContent(modalIdx - 1, false);
+    document.getElementById('slide-curr').innerHTML = getSlideContent(modalIdx, true);
+    document.getElementById('slide-next').innerHTML = getSlideContent(modalIdx + 1, false);
+
+    track.style.transition = 'none';
+    track.style.transform = 'translateX(0px)';
+    trackTranslateX = 0;
+
+    const f = filteredFiles[modalIdx];
     document.getElementById('modal-info').innerText = `${f.uploader} 様 (${f.table})`;
     
     document.getElementById('dl-btn').onclick = () => {
@@ -396,94 +403,127 @@
       document.body.removeChild(a);
     };
 
-    if(f.mime.includes('video')) {
-      img.style.display = 'none'; vid.style.display = 'block'; vid.src = f.previewUrl;
-    } else {
-      vid.style.display = 'none'; vid.src = ""; img.style.display = 'block'; img.src = f.thumbnail;
-    }
+    document.getElementById('btn-prev').style.display = modalIdx > 0 ? 'block' : 'none';
+    document.getElementById('btn-next').style.display = modalIdx < filteredFiles.length - 1 ? 'block' : 'none';
   }
 
-  function closeModal() { document.getElementById('modal').style.display = 'none'; document.getElementById('modal-video').src=""; }
-  function nextImg() { if(modalIdx < filteredFiles.length-1) openModal(modalIdx+1); }
-  function prevImg() { if(modalIdx > 0) openModal(modalIdx-1); }
+  function updateTransform() {
+    const img = document.getElementById('modal-img');
+    if(img) img.style.transform = `translate(${imgTranslateX}px, ${imgTranslateY}px) scale(${scale})`;
+  }
+
+  function openModal(idx) {
+    modalIdx = idx; scale = 1; imgTranslateX = 0; imgTranslateY = 0; 
+    document.getElementById('modal').style.display = 'flex';
+    renderSlides();
+  }
+
+  function closeModal() { document.getElementById('modal').style.display = 'none'; }
+
+  // ★ 次へ・前へ アニメーション処理
+  function slideToNext() {
+    if (modalIdx >= filteredFiles.length - 1) return;
+    const track = document.getElementById('slider-track');
+    track.style.transition = 'transform 0.3s ease-out';
+    track.style.transform = `translateX(-33.3333%)`;
+    setTimeout(() => { modalIdx++; scale = 1; imgTranslateX = 0; imgTranslateY = 0; renderSlides(); }, 300);
+  }
+
+  function slideToPrev() {
+    if (modalIdx <= 0) return;
+    const track = document.getElementById('slider-track');
+    track.style.transition = 'transform 0.3s ease-out';
+    track.style.transform = `translateX(33.3333%)`;
+    setTimeout(() => { modalIdx--; scale = 1; imgTranslateX = 0; imgTranslateY = 0; renderSlides(); }, 300);
+  }
 
   function setupViewerControls() {
-    const img = document.getElementById('modal-img');
     const area = document.getElementById('zoom-area');
-    
     let initDist = 0;
-    let swipeStartX = 0;
-    let isSwiping = false;
 
     area.addEventListener('touchstart', e => { 
       if (e.touches.length === 1) { 
         if (scale === 1) {
-          isSwiping = true;
+          isSwipingTrack = true;
           swipeStartX = e.touches[0].clientX;
-          img.style.transition = 'none'; // ★ 指に吸い付かせるための即時追従
+          document.getElementById('slider-track').style.transition = 'none';
         } else {
-          isDragging = true; startX = e.touches[0].clientX - translateX; startY = e.touches[0].clientY - translateY; img.style.transition = 'none'; 
+          isDraggingImg = true; 
+          imgStartX = e.touches[0].clientX - imgTranslateX; 
+          imgStartY = e.touches[0].clientY - imgTranslateY; 
+          const img = document.getElementById('modal-img');
+          if(img) img.style.transition = 'none'; 
         }
       } 
     }, { passive: false });
 
     area.addEventListener('touchmove', e => {
       if (e.touches.length === 2) { 
-        isSwiping = false;
+        isSwipingTrack = false;
         e.preventDefault();
         const d = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
         if (initDist === 0) initDist = d;
-        else { scale *= d / initDist; scale = Math.min(Math.max(1, scale), 5); if (scale === 1) { translateX = 0; translateY = 0; } updateTransform(); initDist = d; }
+        else { 
+          scale *= d / initDist; scale = Math.min(Math.max(1, scale), 5); 
+          if (scale === 1) { imgTranslateX = 0; imgTranslateY = 0; } 
+          updateTransform(); initDist = d; 
+        }
       } else if (e.touches.length === 1) { 
-        if (scale > 1 && isDragging) { 
+        if (scale > 1 && isDraggingImg) { 
           e.preventDefault(); 
-          translateX = e.touches[0].clientX - startX; translateY = e.touches[0].clientY - startY; updateTransform(); 
-        } else if (scale === 1 && isSwiping) {
-          // ★ スワイプ中の指トラッキング
+          imgTranslateX = e.touches[0].clientX - imgStartX; 
+          imgTranslateY = e.touches[0].clientY - imgStartY; 
+          updateTransform(); 
+        } else if (scale === 1 && isSwipingTrack) {
           e.preventDefault(); 
-          translateX = e.touches[0].clientX - swipeStartX;
-          updateTransform();
+          trackTranslateX = e.touches[0].clientX - swipeStartX;
+          document.getElementById('slider-track').style.transform = `translateX(${trackTranslateX}px)`;
         }
       }
     }, { passive: false });
 
     area.addEventListener('touchend', e => { 
       initDist = 0; 
-      if (isDragging) { isDragging = false; img.style.transition = 'transform 0.1s ease-out'; }
+      if (isDraggingImg) { 
+        isDraggingImg = false; 
+        const img = document.getElementById('modal-img');
+        if(img) img.style.transition = 'transform 0.1s ease-out'; 
+      }
       
-      if (isSwiping) {
-        isSwiping = false;
-        
-        // ★ 閾値を超えたら画像切り替え、超えなければ元に戻る
-        if (translateX < -70 && modalIdx < filteredFiles.length - 1) {
-          img.style.transition = 'none';
-          nextImg();
-        } else if (translateX > 70 && modalIdx > 0) {
-          img.style.transition = 'none';
-          prevImg();
+      if (isSwipingTrack) {
+        isSwipingTrack = false;
+        const track = document.getElementById('slider-track');
+        if (trackTranslateX < -70 && modalIdx < filteredFiles.length - 1) {
+          slideToNext();
+        } else if (trackTranslateX > 70 && modalIdx > 0) {
+          slideToPrev();
         } else {
-          img.style.transition = 'transform 0.2s ease-out';
-          translateX = 0;
-          updateTransform();
+          track.style.transition = 'transform 0.3s ease-out';
+          track.style.transform = `translateX(0px)`;
         }
       }
     });
-    
-    // PC用のマウスドラッグとホイール処理（変更なし）
+
+    // PCマウス・キーボード用
     area.addEventListener('wheel', e => {
       e.preventDefault();
       scale += (e.deltaY < 0) ? 0.15 : -0.15; scale = Math.min(Math.max(1, scale), 5);
-      if (scale === 1) { translateX = 0; translateY = 0; } updateTransform();
+      if (scale === 1) { imgTranslateX = 0; imgTranslateY = 0; } updateTransform();
     }, { passive: false });
     
-    img.addEventListener('mousedown', e => { e.preventDefault(); if(scale > 1){ isDragging = true; startX = e.clientX - translateX; startY = e.clientY - translateY; img.style.transition = 'none'; }});
-    window.addEventListener('mousemove', e => { if (!isDragging) return; translateX = e.clientX - startX; translateY = e.clientY - startY; updateTransform(); });
-    window.addEventListener('mouseup', () => { isDragging = false; img.style.transition = 'transform 0.1s ease-out'; });
+    area.addEventListener('mousedown', e => { 
+      if(scale > 1){ 
+        e.preventDefault(); isDraggingImg = true; imgStartX = e.clientX - imgTranslateX; imgStartY = e.clientY - imgTranslateY; 
+        const img = document.getElementById('modal-img'); if(img) img.style.transition = 'none'; 
+      }
+    });
+    window.addEventListener('mousemove', e => { if (!isDraggingImg) return; imgTranslateX = e.clientX - imgStartX; imgTranslateY = e.clientY - imgStartY; updateTransform(); });
+    window.addEventListener('mouseup', () => { if(isDraggingImg) { isDraggingImg = false; const img = document.getElementById('modal-img'); if(img) img.style.transition = 'transform 0.1s ease-out'; } });
     
     window.addEventListener('keydown', e => {
       if (document.getElementById('modal').style.display === 'flex') {
-        if (e.key === 'ArrowRight') nextImg();
-        if (e.key === 'ArrowLeft') prevImg();
+        if (e.key === 'ArrowRight') slideToNext();
+        if (e.key === 'ArrowLeft') slideToPrev();
         if (e.key === 'Escape') closeModal();
       }
     });
