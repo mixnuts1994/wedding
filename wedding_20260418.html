@@ -56,6 +56,8 @@
     #modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(253, 251, 247, 0.98); display: none; z-index: 100; flex-direction: column; touch-action: none; }
     .modal-header { display: flex; justify-content: space-between; padding: 20px; color: var(--gold); z-index: 10;}
     .modal-content { flex: 1; display: flex; justify-content: center; align-items: center; overflow: hidden; position: relative; }
+    
+    /* スワイプ中にはみ出さないよう工夫 */
     #modal-img { max-width: 100%; max-height: 100%; object-fit: contain; cursor: grab; touch-action: none; user-select: none; -webkit-user-drag: none; transition: transform 0.1s ease-out; }
     #modal-video { width: 100%; height: 100%; border: none; display: none; background: #000;}
     
@@ -154,7 +156,7 @@
 </div>
 
 <script>
-  // ★★★ 超重要：ここに新しく発行したGASのURLを貼り付けます ★★★
+  // 完全に組み込み済みのURL
   const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyRfIJU14TkP6EcM9pbf7BeLZQc5zPOTrYfmwuAkggcs8Uz6m0dWT28Q_bqXTIHfZenyw/exec";
 
   async function callGASJson(payload) {
@@ -168,10 +170,7 @@
   let scale = 1; let translateX = 0; let translateY = 0; let isDragging = false; let startX = 0; let startY = 0;
 
   window.onload = () => { 
-    initTables(); 
-    loadData(); 
-    setupViewerControls(); 
-    
+    initTables(); loadData(); setupViewerControls(); 
     if (localStorage.getItem('uploadInterrupted') === 'true') {
       showToast("前回、送信中に画面が閉じられたため、\n正しく保存されていないお写真がある可能性があります。", true);
       localStorage.removeItem('uploadInterrupted');
@@ -250,7 +249,7 @@
     document.getElementById('load-more-btn').style.display = showCount < filteredFiles.length ? 'block' : 'none';
   }
 
-  // ★ Google Driveアプリ起動への確実な誘導処理
+  // ★ Google Drive アプリへの自動移行（LINEブラウザ対応）
   async function startDriveUpload() {
     const table = document.getElementById('upload-table').value;
     const name = document.getElementById('uploader-name').value;
@@ -260,37 +259,34 @@
     const btn = document.getElementById('drive-btn');
     btn.disabled = true; btn.innerHTML = "専用フォルダを準備中...⏳";
 
-    const newWin = window.open('', '_blank');
-    if (!newWin) {
-      showToast("ポップアップがブロックされました。\nブラウザの設定を確認してください。", true);
-      btn.disabled = false; btn.innerHTML = "<span>📁 Google Driveで登録</span><span style='font-size: 11px; font-weight: normal; margin-top: 4px;'>（動画・バックグラウンド登録はこちら）</span>";
-      return;
+    let newWin = null;
+    try { newWin = window.open('', '_blank'); } catch(e) {}
+    
+    if (newWin) {
+      newWin.document.write('<meta name="viewport" content="width=device-width, initial-scale=1"><p style="text-align:center; margin-top:50px; font-family:sans-serif; color:#c5a059;">あなた専用のフォルダを準備しています...<br>そのままお待ちください。</p>');
     }
-    newWin.document.write('<meta name="viewport" content="width=device-width, initial-scale=1"><p style="text-align:center; margin-top:50px; font-family:sans-serif; color:#c5a059;">あなた専用のフォルダを準備しています...<br>そのままお待ちください。</p>');
 
     try {
       const prepRes = await callGASJson({ action: 'prepareFolder', tableName: table, uploaderName: name });
       if (!prepRes.success) throw new Error("フォルダの準備に失敗しました");
       
-      // ★ 確実にアプリを起動させるためのクリック画面
-      newWin.document.body.innerHTML = `
-        <div style="text-align:center; margin-top:40px; font-family:sans-serif;">
-          <p style="color:#c5a059; margin-bottom:20px; font-weight:bold;">あなた専用のフォルダが完成しました！</p>
-          <a href="https://drive.google.com/drive/folders/${prepRes.folderId}?usp=drive_link" 
-             style="display:inline-block; padding:15px 30px; background:#c5a059; color:#fff; text-decoration:none; border-radius:5px; font-weight:bold;">
-             📁 Google Driveアプリを開く
-          </a>
-          <p style="font-size:12px; color:#666; margin-top:20px; line-height:1.6;">
-            ※ボタンを押すとアプリが立ち上がります<br>
-            ※アプリ内で「＋」ボタンから追加してください
-          </p>
-        </div>
-      `;
+      const driveUrl = `https://drive.google.com/drive/folders/${prepRes.folderId}?usp=drive_link`;
+      
+      // ★ 自動でURLに移行（別タブがブロックされていれば同じ画面を強制的に移行）
+      if (newWin && !newWin.closed) {
+        newWin.location.href = driveUrl;
+      } else {
+        window.location.href = driveUrl;
+      }
+      
     } catch(e) {
-      newWin.close();
+      if (newWin) newWin.close();
       showToast("フォルダの作成に失敗しました。\n" + e.message, true);
     } finally {
-      btn.disabled = false; btn.innerHTML = "<span>📁 Google Driveで登録</span><span style='font-size: 11px; font-weight: normal; margin-top: 4px;'>（動画・バックグラウンド登録はこちら）</span>";
+      // 成功した場合も画面が戻ってきた時用にボタンを復旧しておく
+      setTimeout(() => {
+        btn.disabled = false; btn.innerHTML = "<span>📁 Google Driveで登録</span><span style='font-size: 11px; font-weight: normal; margin-top: 4px;'>（動画・バックグラウンド登録はこちら）</span>";
+      }, 2000);
     }
   }
 
@@ -380,12 +376,17 @@
   }
 
   function openModal(idx) {
-    modalIdx = idx; scale = 1; translateX = 0; translateY = 0; updateTransform();
+    modalIdx = idx; scale = 1; translateX = 0; translateY = 0; 
+    
+    const img = document.getElementById('modal-img');
+    const vid = document.getElementById('modal-video');
+    img.style.transition = 'none'; // 切り替え時のリセット
+    updateTransform();
+    
     const f = filteredFiles[idx];
     document.getElementById('modal').style.display = 'flex';
     document.getElementById('modal-info').innerText = `${f.uploader} 様 (${f.table})`;
     
-    // ★ ダウンロードボタンの強制保存処理（裏技）
     document.getElementById('dl-btn').onclick = () => {
       const a = document.createElement('a');
       a.href = f.downloadUrl;
@@ -394,9 +395,6 @@
       a.click();
       document.body.removeChild(a);
     };
-    
-    const img = document.getElementById('modal-img');
-    const vid = document.getElementById('modal-video');
 
     if(f.mime.includes('video')) {
       img.style.display = 'none'; vid.style.display = 'block'; vid.src = f.previewUrl;
@@ -413,61 +411,81 @@
     const img = document.getElementById('modal-img');
     const area = document.getElementById('zoom-area');
     
-    // ★ PC用キーボード操作（← →）
-    window.addEventListener('keydown', e => {
-      if (document.getElementById('modal').style.display === 'flex') {
-        if (e.key === 'ArrowRight') nextImg();
-        if (e.key === 'ArrowLeft') prevImg();
-        if (e.key === 'Escape') closeModal();
+    let initDist = 0;
+    let swipeStartX = 0;
+    let isSwiping = false;
+
+    area.addEventListener('touchstart', e => { 
+      if (e.touches.length === 1) { 
+        if (scale === 1) {
+          isSwiping = true;
+          swipeStartX = e.touches[0].clientX;
+          img.style.transition = 'none'; // ★ 指に吸い付かせるための即時追従
+        } else {
+          isDragging = true; startX = e.touches[0].clientX - translateX; startY = e.touches[0].clientY - translateY; img.style.transition = 'none'; 
+        }
+      } 
+    }, { passive: false });
+
+    area.addEventListener('touchmove', e => {
+      if (e.touches.length === 2) { 
+        isSwiping = false;
+        e.preventDefault();
+        const d = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+        if (initDist === 0) initDist = d;
+        else { scale *= d / initDist; scale = Math.min(Math.max(1, scale), 5); if (scale === 1) { translateX = 0; translateY = 0; } updateTransform(); initDist = d; }
+      } else if (e.touches.length === 1) { 
+        if (scale > 1 && isDragging) { 
+          e.preventDefault(); 
+          translateX = e.touches[0].clientX - startX; translateY = e.touches[0].clientY - startY; updateTransform(); 
+        } else if (scale === 1 && isSwiping) {
+          // ★ スワイプ中の指トラッキング
+          e.preventDefault(); 
+          translateX = e.touches[0].clientX - swipeStartX;
+          updateTransform();
+        }
+      }
+    }, { passive: false });
+
+    area.addEventListener('touchend', e => { 
+      initDist = 0; 
+      if (isDragging) { isDragging = false; img.style.transition = 'transform 0.1s ease-out'; }
+      
+      if (isSwiping) {
+        isSwiping = false;
+        
+        // ★ 閾値を超えたら画像切り替え、超えなければ元に戻る
+        if (translateX < -70 && modalIdx < filteredFiles.length - 1) {
+          img.style.transition = 'none';
+          nextImg();
+        } else if (translateX > 70 && modalIdx > 0) {
+          img.style.transition = 'none';
+          prevImg();
+        } else {
+          img.style.transition = 'transform 0.2s ease-out';
+          translateX = 0;
+          updateTransform();
+        }
       }
     });
-
+    
+    // PC用のマウスドラッグとホイール処理（変更なし）
     area.addEventListener('wheel', e => {
       e.preventDefault();
       scale += (e.deltaY < 0) ? 0.15 : -0.15; scale = Math.min(Math.max(1, scale), 5);
       if (scale === 1) { translateX = 0; translateY = 0; } updateTransform();
     }, { passive: false });
     
-    function startDrag(clientX, clientY) {
-      if (scale <= 1) return; 
-      isDragging = true; startX = clientX - translateX; startY = clientY - translateY; img.style.transition = 'none'; 
-    }
-    function drag(clientX, clientY) { if (!isDragging) return; translateX = clientX - startX; translateY = clientY - startY; updateTransform(); }
-    function endDrag() { isDragging = false; img.style.transition = 'transform 0.1s ease-out'; }
+    img.addEventListener('mousedown', e => { e.preventDefault(); if(scale > 1){ isDragging = true; startX = e.clientX - translateX; startY = e.clientY - translateY; img.style.transition = 'none'; }});
+    window.addEventListener('mousemove', e => { if (!isDragging) return; translateX = e.clientX - startX; translateY = e.clientY - startY; updateTransform(); });
+    window.addEventListener('mouseup', () => { isDragging = false; img.style.transition = 'transform 0.1s ease-out'; });
     
-    img.addEventListener('mousedown', e => { e.preventDefault(); startDrag(e.clientX, e.clientY); });
-    window.addEventListener('mousemove', e => drag(e.clientX, e.clientY)); window.addEventListener('mouseup', endDrag);
-    
-    let initDist = 0;
-    let swipeStartX = 0; // ★ スワイプ検知用
-    
-    area.addEventListener('touchstart', e => { 
-      if (e.touches.length === 1) { 
-        startDrag(e.touches[0].clientX, e.touches[0].clientY); 
-        swipeStartX = e.touches[0].clientX;
-      } 
-    }, { passive: false });
-    
-    area.addEventListener('touchmove', e => {
-      if (e.touches.length === 2) { 
-        e.preventDefault();
-        const d = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
-        if (initDist === 0) initDist = d;
-        else { scale *= d / initDist; scale = Math.min(Math.max(1, scale), 5); if (scale === 1) { translateX = 0; translateY = 0; } updateTransform(); initDist = d; }
-      } else if (e.touches.length === 1 && isDragging && scale > 1) { e.preventDefault(); drag(e.touches[0].clientX, e.touches[0].clientY); }
-    }, { passive: false });
-    
-    area.addEventListener('touchend', e => { 
-      initDist = 0; 
-      endDrag(); 
-      // ★ スワイプでの画像切り替え処理
-      if (scale === 1 && swipeStartX > 0) {
-         const swipeEndX = e.changedTouches[0].clientX;
-         const diffX = swipeStartX - swipeEndX;
-         if (diffX > 50) nextImg(); // 左へスワイプ＝次へ
-         else if (diffX < -50) prevImg(); // 右へスワイプ＝前へ
+    window.addEventListener('keydown', e => {
+      if (document.getElementById('modal').style.display === 'flex') {
+        if (e.key === 'ArrowRight') nextImg();
+        if (e.key === 'ArrowLeft') prevImg();
+        if (e.key === 'Escape') closeModal();
       }
-      swipeStartX = 0;
     });
   }
 
