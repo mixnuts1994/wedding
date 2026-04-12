@@ -36,7 +36,7 @@
     .video-icon::after { content: ''; border-left: 8px solid white; border-top: 5px solid transparent; border-bottom: 5px solid transparent; margin-left: 2px; }
     .uploader-tag { position: absolute; bottom: 0; background: linear-gradient(transparent, rgba(0,0,0,0.6)); color: white; width: 100%; font-size: 10px; padding: 10px 0 5px; text-align: center; }
 
-    .panel { background: var(--white); padding: 40px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); display: none; flex-direction: column; gap: 20px; align-items: center; position: relative; overflow: hidden;}
+    .panel { background: var(--white); padding: 40px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); display: none; flex-direction: column; gap: 20px; align-items: center; position: relative; overflow: hidden; text-align: center;}
     .panel input[type="text"], .panel input[type="password"], .panel select { width: 100%; max-width: 350px; border: 1px solid var(--light-gold); box-sizing: border-box;}
 
     .btn { padding: 15px 20px; border-radius: 4px; border: none; cursor: pointer; font-size: 14px; transition: 0.3s; font-family: inherit; letter-spacing: 1px; font-weight: bold;}
@@ -75,7 +75,7 @@
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     @media (max-width: 600px) { .gallery { grid-template-columns: repeat(3, 1fr); gap: 5px; } h1 { font-size: 1.8rem; } }
     
-    .remember-label { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #666; width: 100%; max-width: 350px; margin-top: -10px; margin-bottom: 10px; cursor: pointer; }
+    .remember-label { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #666; width: 100%; max-width: 350px; margin-top: -10px; margin-bottom: 10px; cursor: pointer; justify-content: center; }
     .remember-label input { width: 16px; height: 16px; cursor: pointer; accent-color: var(--gold); }
 
     /* ロックオーバーレイ */
@@ -107,17 +107,19 @@
   </div>
 
   <div id="settings-section" class="panel">
-    <h3 style="color:var(--gold); margin:0;">Admin Settings</h3>
+    <h3 style="color:var(--gold); margin:0; text-align: center;">Admin Settings</h3>
     
-    <div id="settings-auth" style="width: 100%; display: flex; flex-direction: column; align-items: center;">
-      <input type="password" id="debug-pw" placeholder="管理者パスワード" style="margin-bottom:15px;">
+    <div id="settings-auth" style="width: 100%; display: flex; flex-direction: column; align-items: center; margin-top: 15px;">
+      <input type="password" id="debug-pw" placeholder="管理者パスワード" style="margin-bottom:15px; text-align: center;">
       <button class="btn btn-gold" onclick="saveTables()">認証する</button>
     </div>
 
-    <div id="settings-admin-content" style="display:none; width: 100%; flex-direction: column; gap: 15px; align-items: center;">
-      <p style="color:var(--gold); margin:0; font-size: 13px;">グループ名の編集</p>
-      <textarea id="table-list-input" style="width:100%; height:80px; padding:10px;"></textarea>
-      <p style="font-size:10px; color:#888; margin:0;">※各グループをカンマ「,」で区切ってください</p>
+    <div id="settings-admin-content" style="display:none; width: 100%; flex-direction: column; gap: 15px; align-items: center; margin-top: 15px;">
+      <p style="color:var(--gold); margin:0; font-size: 13px; text-align: center;">グループ名の編集</p>
+      
+      <textarea id="table-list-input" style="width:100%; max-width:350px; height:80px; padding:10px; border: 1px solid var(--light-gold); border-radius: 4px; outline: none; font-family: inherit; box-sizing: border-box; text-align: center;"></textarea>
+      
+      <p style="font-size:10px; color:#888; margin:0; text-align: center;">※各グループをカンマ「,」で区切ってください</p>
       <button class="btn btn-gold" onclick="saveTables()">変更を保存して完了</button>
       <button class="btn btn-outline" style="font-size: 12px; padding: 10px;" onclick="exitAdmin()">ログアウト</button>
     </div>
@@ -152,13 +154,13 @@
     </label>
     
     <button id="browser-btn" class="btn btn-gold" onclick="document.getElementById('file-input').click()">
-      <span>🌐 ブラウザで登録</span><br>
+      <span style="font-size: 15px;">🌐 ブラウザで登録</span>
       <span style="font-size: 11px; font-weight: normal; margin-top: 4px;">（お写真はこちら）</span>
     </button>
     <input type="file" id="file-input" multiple accept="image/*" style="display:none" onchange="startUpload()">
     
     <button id="drive-btn" class="btn btn-outline" style="margin-top: 5px;" onclick="startDriveUpload()">
-      <span>📁 Google Driveで登録</span>
+      <span style="font-size: 15px;">📁 Google Driveで登録</span>
       <span style="font-size: 11px; font-weight: normal; margin-top: 4px;">（動画・バックグラウンド登録はこちら）</span>
     </button>
 
@@ -197,7 +199,7 @@
 <div id="delete-modal">
   <div class="del-box">
     <p style="margin-bottom:20px;">削除パスワード</p>
-    <input type="password" id="del-pw-input" style="width:100%; margin-bottom:20px; padding:10px; box-sizing:border-box;">
+    <input type="password" id="del-pw-input" style="width:100%; margin-bottom:20px; padding:10px; box-sizing:border-box; text-align: center;">
     <button class="btn btn-gold" onclick="executeDelete()" style="width:100%;">削除を確定</button>
     <p onclick="closeDelete()" style="margin-top:15px; font-size:12px; color:#888; cursor:pointer;">キャンセル</p>
   </div>
@@ -230,9 +232,10 @@
     
     const overlay = document.getElementById('upload-lock-overlay');
     if (unlocked) {
-      // ★ 修正：完全に display を消し、透明なバリアを残さない
-      overlay.style.display = 'none';
-      overlay.style.pointerEvents = 'none';
+      if (overlay.style.opacity !== '0') {
+        overlay.style.display = 'none';
+        overlay.style.pointerEvents = 'none';
+      }
     } else {
       overlay.style.display = 'flex';
       overlay.style.opacity = '1';
@@ -304,7 +307,7 @@
         const overlay = document.getElementById('upload-lock-overlay');
         if (overlay) {
           overlay.style.opacity = '0'; 
-          overlay.style.pointerEvents = 'none'; // ★ 修正：フェードアウト中でもクリックを阻害しない
+          overlay.style.pointerEvents = 'none';
         }
         
         setTimeout(() => {
@@ -330,7 +333,7 @@
 
   function updateAdminVisibility() {
     const isAdmin = localStorage.getItem('wedding_test_mode') === 'true';
-    document.getElementById('settings-auth').style.display = isAdmin ? 'none' : 'block';
+    document.getElementById('settings-auth').style.display = isAdmin ? 'none' : 'flex';
     document.getElementById('settings-admin-content').style.display = isAdmin ? 'flex' : 'none';
   }
 
@@ -480,7 +483,10 @@
       const driveUrl = `https://drive.google.com/drive/folders/${prepRes.folderId}?usp=drive_link`;
       if (newWin && !newWin.closed) { newWin.location.href = driveUrl; } else { window.location.href = driveUrl; }
     } catch(e) { if (newWin) newWin.close(); showToast("フォルダの作成に失敗しました。\n" + e.message, true); }
-    finally { setTimeout(() => { btn.disabled = false; btn.innerHTML = "<span>📁 Google Driveで登録</span><span style='font-size: 11px; font-weight: normal; margin-top: 4px;'>（動画・バックグラウンド登録はこちら）</span>"; }, 2000); }
+    finally { 
+      // ★ 修正：文言を元に戻す処理からも <br> を削除
+      setTimeout(() => { btn.disabled = false; btn.innerHTML = "<span style='font-size: 15px;'>📁 Google Driveで登録</span><span style='font-size: 11px; font-weight: normal; margin-top: 4px;'>（動画・バックグラウンド登録はこちら）</span>"; }, 2000); 
+    }
   }
 
   async function startUpload() {
