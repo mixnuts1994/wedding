@@ -110,7 +110,7 @@
     <h3 style="color:var(--gold); margin:0;">Admin Settings</h3>
     
     <div id="settings-auth" style="width: 100%; display: flex; flex-direction: column; align-items: center;">
-      <input type="password" id="debug-pw" placeholder="設定パスワード（1234）" style="margin-bottom:15px;">
+      <input type="password" id="debug-pw" placeholder="管理者パスワード" style="margin-bottom:15px;">
       <button class="btn btn-gold" onclick="saveTables()">認証する</button>
     </div>
 
@@ -230,10 +230,13 @@
     
     const overlay = document.getElementById('upload-lock-overlay');
     if (unlocked) {
-      if (overlay.style.opacity !== '0') overlay.style.display = 'none'; 
+      // ★ 修正：完全に display を消し、透明なバリアを残さない
+      overlay.style.display = 'none';
+      overlay.style.pointerEvents = 'none';
     } else {
       overlay.style.display = 'flex';
       overlay.style.opacity = '1';
+      overlay.style.pointerEvents = 'auto';
     }
     
     const dis = !unlocked;
@@ -299,7 +302,10 @@
         showToast("✨ お写真の登録が解禁されました！ ✨");
         
         const overlay = document.getElementById('upload-lock-overlay');
-        if (overlay) overlay.style.opacity = '0'; 
+        if (overlay) {
+          overlay.style.opacity = '0'; 
+          overlay.style.pointerEvents = 'none'; // ★ 修正：フェードアウト中でもクリックを阻害しない
+        }
         
         setTimeout(() => {
           updateLockUI();
@@ -406,6 +412,7 @@
       return;
     } else if (debugPw === '0000') {
       exitAdmin(); 
+      document.getElementById('debug-pw').value = '';
       return;
     }
 
