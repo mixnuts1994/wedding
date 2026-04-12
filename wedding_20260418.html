@@ -36,13 +36,14 @@
     .video-icon::after { content: ''; border-left: 8px solid white; border-top: 5px solid transparent; border-bottom: 5px solid transparent; margin-left: 2px; }
     .uploader-tag { position: absolute; bottom: 0; background: linear-gradient(transparent, rgba(0,0,0,0.6)); color: white; width: 100%; font-size: 10px; padding: 10px 0 5px; text-align: center; }
 
-    .panel { background: var(--white); padding: 40px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); display: none; flex-direction: column; gap: 20px; align-items: center; }
+    .panel { background: var(--white); padding: 40px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); display: none; flex-direction: column; gap: 20px; align-items: center; position: relative; overflow: hidden;}
     .panel input[type="text"], .panel input[type="password"], .panel select { width: 100%; max-width: 350px; border: 1px solid var(--light-gold); box-sizing: border-box;}
 
     .btn { padding: 15px 20px; border-radius: 4px; border: none; cursor: pointer; font-size: 14px; transition: 0.3s; font-family: inherit; letter-spacing: 1px; font-weight: bold;}
     .btn-gold { background: var(--gold); color: white; width: 100%; max-width: 350px; display: flex; flex-direction: column; justify-content: center; align-items: center; line-height: 1.4;}
     .btn-gold:disabled { background: #ccc; cursor: not-allowed; }
     .btn-outline { border: 1px solid var(--gold); background: transparent; color: var(--gold); width: 100%; max-width: 350px; display: flex; flex-direction: column; justify-content: center; align-items: center; line-height: 1.4;}
+    .btn-outline:disabled { border-color: #ccc; color: #ccc; cursor: not-allowed; }
 
     .progress-container { width: 100%; max-width: 350px; display: none; text-align: center;}
     .progress-bar { height: 6px; background: #f0f0f0; border-radius: 3px; overflow: hidden; margin-top: 15px; }
@@ -74,9 +75,17 @@
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     @media (max-width: 600px) { .gallery { grid-template-columns: repeat(3, 1fr); gap: 5px; } h1 { font-size: 1.8rem; } }
     
-    /* ★ チェックボックスのデザイン */
     .remember-label { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #666; width: 100%; max-width: 350px; margin-top: -10px; margin-bottom: 10px; cursor: pointer; }
     .remember-label input { width: 16px; height: 16px; cursor: pointer; accent-color: var(--gold); }
+
+    #upload-lock-overlay {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(253, 251, 247, 0.95); z-index: 50; display: none; flex-direction: column;
+      justify-content: center; align-items: center; text-align: center; padding: 30px; box-sizing: border-box;
+      backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    }
+    #upload-lock-overlay h3 { font-family: 'Libre Baskerville', serif; font-style: italic; color: var(--gold); font-size: 24px; margin-bottom: 10px;}
+    #upload-lock-overlay p { font-size: 14px; line-height: 1.8; color: var(--text); margin-top: 10px;}
   </style>
 </head>
 <body>
@@ -98,7 +107,11 @@
   <div id="settings-section" class="panel">
     <h3 style="color:var(--gold); margin:0;">グループ名の編集</h3>
     <textarea id="table-list-input" style="width:100%; height:80px; padding:10px;"></textarea>
-    <button class="btn btn-gold" onclick="saveTables()">設定を更新する</button>
+    
+    <input type="password" id="debug-pw" placeholder="テスト用解除パスワード（1234）" style="margin-top:10px;">
+    <p style="font-size:10px; color:#888; margin:5px 0 0 0;">※1234で即時解禁、0000で元に戻ります</p>
+    
+    <button class="btn btn-gold" onclick="saveTables()" style="margin-top:15px;">設定を更新する</button>
   </div>
 
   <div id="view-section">
@@ -112,6 +125,11 @@
 
   <div id="upload-section" class="panel">
     
+    <div id="upload-lock-overlay">
+      <h3>Ready to Share?</h3>
+      <p>いよいよ本日の主役の登場です！<br><br>お写真の登録は、挙式開始後の<br><strong style="color:var(--gold); font-size:16px;">16:00</strong> より解放いたします。<br><br>当日の素敵な瞬間を、<br>ぜひたくさん撮影してお待ちくださいませ📸</p>
+    </div>
+
     <select id="upload-table"></select>
     <input type="text" id="uploader-name" placeholder="お名前・ニックネーム">
     <input type="password" id="delete-pw" placeholder="削除用パスワード（ブラウザ登録時は必須）">
@@ -121,7 +139,7 @@
     </label>
     
     <button id="browser-btn" class="btn btn-gold" onclick="document.getElementById('file-input').click()">
-      <span>🌐 ブラウザで登録</span>
+      <span>🌐 ブラウザで登録</span><br>
       <span style="font-size: 11px; font-weight: normal; margin-top: 4px;">（お写真はこちら）</span>
     </button>
     <input type="file" id="file-input" multiple accept="image/*" style="display:none" onchange="startUpload()">
@@ -177,8 +195,32 @@
 </div>
 
 <script>
-  // ★★★ 超重要：ここに新しく発行したGASのURLを貼り付けます ★★★
   const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyRfIJU14TkP6EcM9pbf7BeLZQc5zPOTrYfmwuAkggcs8Uz6m0dWT28Q_bqXTIHfZenyw/exec";
+
+  const UNLOCK_DATE = new Date('2026-04-18T16:00:00+09:00').getTime();
+
+  function isUnlocked() {
+    if (localStorage.getItem('wedding_test_mode') === 'true') return true;
+    return Date.now() >= UNLOCK_DATE;
+  }
+
+  function formatTableName(name) {
+    if (isUnlocked()) return name;
+    return name.replace(/^【.*?】/, '');
+  }
+
+  function updateLockUI() {
+    const unlocked = isUnlocked();
+    document.getElementById('filter-table').style.display = unlocked ? 'block' : 'none';
+    document.getElementById('upload-lock-overlay').style.display = unlocked ? 'none' : 'flex';
+    
+    const dis = !unlocked;
+    document.getElementById('upload-table').disabled = dis;
+    document.getElementById('uploader-name').disabled = dis;
+    document.getElementById('delete-pw').disabled = dis;
+    document.getElementById('browser-btn').disabled = dis;
+    document.getElementById('drive-btn').disabled = dis;
+  }
 
   async function callGASJson(payload) {
     const response = await fetch(GAS_API_URL, {
@@ -190,13 +232,10 @@
   let allFiles = []; let filteredFiles = []; let showCount = 0; let modalIdx = 0;
   let scale = 1; let imgTranslateX = 0; let imgTranslateY = 0; 
   let isDraggingImg = false; let imgStartX = 0; let imgStartY = 0;
-  
   let trackTranslateX = 0; let isSwipingTrack = false; let swipeStartX = 0;
 
   window.onload = () => { 
-    initTables(); loadData(); setupViewerControls(); 
-    loadSavedUserInfo(); // ★ 記憶データの読み込み
-
+    updateLockUI(); initTables(); loadData(); setupViewerControls(); loadSavedUserInfo();
     if (localStorage.getItem('uploadInterrupted') === 'true') {
       showToast("前回、送信中に画面が閉じられたため、\n正しく保存されていないお写真がある可能性があります。", true);
       localStorage.removeItem('uploadInterrupted');
@@ -215,12 +254,10 @@
     s.style.display = (s.style.display === 'flex') ? 'none' : 'flex';
   }
 
-  // ★ 記憶データの読み込み機能
   function loadSavedUserInfo() {
     const savedName = localStorage.getItem('wedding_name');
     const savedPw = localStorage.getItem('wedding_pw');
     const rememberMe = localStorage.getItem('wedding_remember');
-
     if (rememberMe === 'true') {
       document.getElementById('remember-me').checked = true;
       if (savedName) document.getElementById('uploader-name').value = savedName;
@@ -230,17 +267,14 @@
     }
   }
 
-  // ★ 記憶データの保存機能
   function saveUserInfo() {
     const isRemember = document.getElementById('remember-me').checked;
-    localStorage.setItem('wedding_remember', isRemember); // チェック状態を保存
-
+    localStorage.setItem('wedding_remember', isRemember); 
     if (isRemember) {
       localStorage.setItem('wedding_group', document.getElementById('upload-table').value);
       localStorage.setItem('wedding_name', document.getElementById('uploader-name').value);
       localStorage.setItem('wedding_pw', document.getElementById('delete-pw').value);
     } else {
-      // チェックが外れていたら情報を消去
       localStorage.removeItem('wedding_group');
       localStorage.removeItem('wedding_name');
       localStorage.removeItem('wedding_pw');
@@ -251,14 +285,21 @@
     try {
       const res = await callGASJson({ action: 'getTableNames' });
       if (!res.success) return;
-      document.getElementById('table-list-input').value = res.tables.join(',');
+      let tables = res.tables;
+      const defaultCheck = tables.join(',');
+      if (defaultCheck.includes('新郎側ゲスト') || defaultCheck.includes('Happy Group')) {
+        tables = ['【豊田市】高校友人','【名鉄名古屋】職場友人','【刈谷市】高校友人','【知多半田】大学学部友人','【大同町】大学サークル友人','【東岡崎】新郎親族','【豊明】新婦親族','新郎新婦より'];
+      }
+      document.getElementById('table-list-input').value = tables.join(',');
       const f = document.getElementById('filter-table');
       const u = document.getElementById('upload-table');
       f.innerHTML = '<option value="ALL">全てのグループ</option>';
       u.innerHTML = '<option value="" disabled selected>グループを選択</option>';
-      res.tables.forEach(t => { f.innerHTML += `<option value="${t}">${t}</option>`; u.innerHTML += `<option value="${t}">${t}</option>`; });
-      
-      // ★ 記憶していたグループがあれば選択状態にする
+      tables.forEach(t => { 
+        const disp = formatTableName(t);
+        f.innerHTML += `<option value="${t}">${disp}</option>`; 
+        u.innerHTML += `<option value="${t}">${disp}</option>`; 
+      });
       const savedGroup = localStorage.getItem('wedding_group');
       if (savedGroup && localStorage.getItem('wedding_remember') === 'true') {
         for (let i = 0; i < u.options.length; i++) {
@@ -269,10 +310,21 @@
   }
 
   async function saveTables() {
+    const debugPw = document.getElementById('debug-pw').value;
+    if (debugPw === '1234') {
+      localStorage.setItem('wedding_test_mode', 'true');
+      showToast("🔐 テストモード解禁：4/18 16:01 として動作します");
+      document.getElementById('debug-pw').value = '';
+    } else if (debugPw === '0000') {
+      localStorage.removeItem('wedding_test_mode');
+      showToast("🔒 テストモード終了：通常の状態に戻りました");
+      document.getElementById('debug-pw').value = '';
+    }
     const arr = document.getElementById('table-list-input').value.split(',').map(s=>s.trim()).filter(s=>s);
     try {
       await callGASJson({ action: 'saveTableNames', tables: arr });
-      showToast("設定を更新しました"); toggleSettings(); initTables();
+      if (debugPw !== '1234' && debugPw !== '0000') showToast("設定を更新しました"); 
+      toggleSettings(); initTables(); updateLockUI(); renderGallery();
     } catch(e) { showToast("保存に失敗しました", true); }
   }
 
@@ -281,6 +333,7 @@
     document.getElementById('upload-section').style.display = t === 'upload' ? 'flex' : 'none';
     document.getElementById('tab-view').classList.toggle('active', t === 'view');
     document.getElementById('tab-upload').classList.toggle('active', t === 'upload');
+    if (t === 'upload') updateLockUI();
   }
 
   async function loadData() {
@@ -308,7 +361,7 @@
       div.className = 'gallery-item';
       div.style.animationDelay = `${(i % 24) * 0.05}s`;
       div.onclick = () => openModal(i);
-      div.innerHTML = `<img src="${f.thumbnail}" loading="lazy">${f.mime.includes('video')?'<div class="video-icon"></div>':''}<div class="uploader-tag">${f.uploader}</div>`;
+      div.innerHTML = `<img src="${f.thumbnail}" loading="lazy">${f.mime.includes('video')?'<div class="video-icon"></div>':''}<div class="uploader-tag">${f.uploader} (${formatTableName(f.table)})</div>`;
       g.appendChild(div);
     }
     showCount = end;
@@ -319,121 +372,69 @@
     const table = document.getElementById('upload-table').value;
     const name = document.getElementById('uploader-name').value;
     if(!table || !name) { showToast("グループとお名前を選択してください\n（パスワードは任意です）", true); return; }
-    
-    // ★ 情報をローカルに記憶する
     saveUserInfo();
-
     const btn = document.getElementById('drive-btn');
     btn.disabled = true; btn.innerHTML = "専用フォルダを準備中...⏳";
-
     let newWin = null;
     try { newWin = window.open('', '_blank'); } catch(e) {}
-    
-    if (newWin) {
-      newWin.document.write('<meta name="viewport" content="width=device-width, initial-scale=1"><p style="text-align:center; margin-top:50px; font-family:sans-serif; color:#c5a059;">あなた専用のフォルダを準備しています...<br>そのままお待ちください。</p>');
-    }
-
+    if (newWin) { newWin.document.write('<meta name="viewport" content="width=device-width, initial-scale=1"><p style="text-align:center; margin-top:50px; font-family:sans-serif; color:#c5a059;">あなた専用のフォルダを準備しています...<br>そのままお待ちください。</p>'); }
     try {
       const prepRes = await callGASJson({ action: 'prepareFolder', tableName: table, uploaderName: name });
       if (!prepRes.success) throw new Error("フォルダの準備に失敗しました");
-      
       const driveUrl = `https://drive.google.com/drive/folders/${prepRes.folderId}?usp=drive_link`;
       if (newWin && !newWin.closed) { newWin.location.href = driveUrl; } 
       else { window.location.href = driveUrl; }
-    } catch(e) {
-      if (newWin) newWin.close();
-      showToast("フォルダの作成に失敗しました。\n" + e.message, true);
-    } finally {
-      setTimeout(() => {
-        btn.disabled = false; btn.innerHTML = "<span>📁 Google Driveで登録</span><span style='font-size: 11px; font-weight: normal; margin-top: 4px;'>（動画・バックグラウンド登録はこちら）</span>";
-      }, 2000);
-    }
+    } catch(e) { if (newWin) newWin.close(); showToast("フォルダの作成に失敗しました。\n" + e.message, true); }
+    finally { setTimeout(() => { btn.disabled = false; btn.innerHTML = "<span>📁 Google Driveで登録</span><span style='font-size: 11px; font-weight: normal; margin-top: 4px;'>（動画・バックグラウンド登録はこちら）</span>"; }, 2000); }
   }
 
   async function startUpload() {
     const input = document.getElementById('file-input');
     if (input.files.length === 0) return; 
-
     const table = document.getElementById('upload-table').value;
     const name = document.getElementById('uploader-name').value;
     const pw = document.getElementById('delete-pw').value;
-    
-    if(!table || !name || !pw) { 
-      showToast("グループ・お名前・パスワードの\n全項目を入力してください", true); 
-      input.value = ""; return; 
-    }
-
-    // ★ 情報をローカルに記憶する
+    if(!table || !name || !pw) { showToast("グループ・お名前・パスワードの\n全項目を入力してください", true); input.value = ""; return; }
     saveUserInfo();
-
     localStorage.setItem('uploadInterrupted', 'true');
     document.getElementById('browser-btn').disabled = true;
     document.getElementById('drive-btn').disabled = true;
     document.getElementById('progress-container').style.display = 'block';
     document.getElementById('upload-warning').style.display = 'block';
     document.getElementById('progress-fill').style.width = '10%';
-
     try {
       const prepRes = await callGASJson({ action: 'prepareFolder', tableName: table, uploaderName: name });
       if (!prepRes.success) throw new Error("フォルダの準備に失敗しました");
       const folderId = prepRes.folderId;
-
       const files = Array.from(input.files);
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         document.getElementById('progress-text').innerText = `${files.length}枚中 ${i+1}枚目を送信中...`;
-        
         const base64Str = await new Promise((res, rej) => {
           const reader = new FileReader();
           reader.onload = e => res(e.target.result.split(',')[1]);
           reader.onerror = () => rej(new Error("読み込みエラー"));
           reader.readAsDataURL(file);
         });
-
-        const uploadRes = await callGASJson({
-          action: 'uploadFileFast',
-          base64Data: base64Str,
-          fileName: file.name,
-          mimeType: file.type,
-          folderId: folderId,
-          uploaderName: name,
-          password: pw,
-          tableName: table
-        });
-
+        const uploadRes = await callGASJson({ action: 'uploadFileFast', base64Data: base64Str, fileName: file.name, mimeType: file.type, folderId: folderId, uploaderName: name, password: pw, tableName: table });
         if (!uploadRes.success) throw new Error("送信に失敗しました");
         const progress = 10 + Math.floor(((i+1)/files.length) * 90);
         document.getElementById('progress-fill').style.width = progress + '%';
         await new Promise(r => setTimeout(r, 1000)); 
       }
-      
-      showToast("送信が完了しました！");
-      localStorage.removeItem('uploadInterrupted');
-      input.value = "";
-      document.getElementById('progress-container').style.display = 'none';
+      showToast("送信が完了しました！"); localStorage.removeItem('uploadInterrupted');
+      input.value = ""; document.getElementById('progress-container').style.display = 'none';
       document.getElementById('upload-warning').style.display = 'none';
-      document.getElementById('browser-btn').disabled = false;
-      document.getElementById('drive-btn').disabled = false;
+      document.getElementById('browser-btn').disabled = false; document.getElementById('drive-btn').disabled = false;
       loadData(); switchTab('view');
-      
-    } catch(e) {
-      alert("🚨 エラー詳細 🚨\n\n" + e.message);
-      document.getElementById('browser-btn').disabled = false;
-      document.getElementById('drive-btn').disabled = false;
-      document.getElementById('progress-container').style.display = 'none';
-      document.getElementById('upload-warning').style.display = 'none';
-      localStorage.removeItem('uploadInterrupted');
-    }
+    } catch(e) { alert("🚨 エラー詳細 🚨\n\n" + e.message); document.getElementById('browser-btn').disabled = false; document.getElementById('drive-btn').disabled = false; document.getElementById('progress-container').style.display = 'none'; document.getElementById('upload-warning').style.display = 'none'; localStorage.removeItem('uploadInterrupted'); }
   }
 
   function getSlideContent(idx, isCurrent) {
     if (idx < 0 || idx >= filteredFiles.length) return "";
     const f = filteredFiles[idx];
-    if (f.mime.includes('video')) {
-      return `<iframe src="${f.previewUrl}" style="width:100%; height:100%; border:none; background:#000;" allow="autoplay" allowfullscreen></iframe>`;
-    } else {
-      return `<img src="${f.thumbnail}" ${isCurrent ? 'id="modal-img"' : ''} style="max-width:100%; max-height:100%; object-fit:contain; pointer-events:none; user-select:none;">`;
-    }
+    if (f.mime.includes('video')) { return `<iframe src="${f.previewUrl}" style="width:100%; height:100%; border:none; background:#000;" allow="autoplay" allowfullscreen></iframe>`; }
+    else { return `<img src="${f.thumbnail}" ${isCurrent ? 'id="modal-img"' : ''} style="max-width:100%; max-height:100%; object-fit:contain; pointer-events:none; user-select:none;">`; }
   }
 
   function renderSlides() {
@@ -441,131 +442,36 @@
     document.getElementById('slide-prev').innerHTML = getSlideContent(modalIdx - 1, false);
     document.getElementById('slide-curr').innerHTML = getSlideContent(modalIdx, true);
     document.getElementById('slide-next').innerHTML = getSlideContent(modalIdx + 1, false);
-
-    track.style.transition = 'none';
-    track.style.transform = 'translateX(0px)';
-    trackTranslateX = 0;
-
+    track.style.transition = 'none'; track.style.transform = 'translateX(0px)'; trackTranslateX = 0;
     const f = filteredFiles[modalIdx];
-    document.getElementById('modal-info').innerText = `${f.uploader} 様 (${f.table})`;
-    
-    document.getElementById('dl-btn').onclick = () => {
-      const a = document.createElement('a');
-      a.href = f.downloadUrl;
-      a.download = 'wedding_photo';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    };
-
+    document.getElementById('modal-info').innerText = `${f.uploader} 様 (${formatTableName(f.table)})`;
+    document.getElementById('dl-btn').onclick = () => { const a = document.createElement('a'); a.href = f.downloadUrl; a.download = 'wedding_photo'; document.body.appendChild(a); a.click(); document.body.removeChild(a); };
     document.getElementById('btn-prev').style.display = modalIdx > 0 ? 'block' : 'none';
     document.getElementById('btn-next').style.display = modalIdx < filteredFiles.length - 1 ? 'block' : 'none';
   }
 
-  function updateTransform() {
-    const img = document.getElementById('modal-img');
-    if(img) img.style.transform = `translate(${imgTranslateX}px, ${imgTranslateY}px) scale(${scale})`;
-  }
-
-  function openModal(idx) {
-    modalIdx = idx; scale = 1; imgTranslateX = 0; imgTranslateY = 0; 
-    document.getElementById('modal').style.display = 'flex';
-    renderSlides();
-  }
-
+  function updateTransform() { const img = document.getElementById('modal-img'); if(img) img.style.transform = `translate(${imgTranslateX}px, ${imgTranslateY}px) scale(${scale})`; }
+  function openModal(idx) { modalIdx = idx; scale = 1; imgTranslateX = 0; imgTranslateY = 0; document.getElementById('modal').style.display = 'flex'; renderSlides(); }
   function closeModal() { document.getElementById('modal').style.display = 'none'; }
-
-  function slideToNext() {
-    if (modalIdx >= filteredFiles.length - 1) return;
-    const track = document.getElementById('slider-track');
-    track.style.transition = 'transform 0.3s ease-out';
-    track.style.transform = `translateX(-33.3333%)`;
-    setTimeout(() => { modalIdx++; scale = 1; imgTranslateX = 0; imgTranslateY = 0; renderSlides(); }, 300);
-  }
-
-  function slideToPrev() {
-    if (modalIdx <= 0) return;
-    const track = document.getElementById('slider-track');
-    track.style.transition = 'transform 0.3s ease-out';
-    track.style.transform = `translateX(33.3333%)`;
-    setTimeout(() => { modalIdx--; scale = 1; imgTranslateX = 0; imgTranslateY = 0; renderSlides(); }, 300);
-  }
+  function slideToNext() { if (modalIdx >= filteredFiles.length - 1) return; const track = document.getElementById('slider-track'); track.style.transition = 'transform 0.3s ease-out'; track.style.transform = `translateX(-33.3333%)`; setTimeout(() => { modalIdx++; scale = 1; imgTranslateX = 0; imgTranslateY = 0; renderSlides(); }, 300); }
+  function slideToPrev() { if (modalIdx <= 0) return; const track = document.getElementById('slider-track'); track.style.transition = 'transform 0.3s ease-out'; track.style.transform = `translateX(33.3333%)`; setTimeout(() => { modalIdx--; scale = 1; imgTranslateX = 0; imgTranslateY = 0; renderSlides(); }, 300); }
 
   function setupViewerControls() {
     const area = document.getElementById('zoom-area');
     let initDist = 0;
-
-    area.addEventListener('touchstart', e => { 
-      if (e.touches.length === 1) { 
-        if (scale === 1) {
-          isSwipingTrack = true; swipeStartX = e.touches[0].clientX;
-          document.getElementById('slider-track').style.transition = 'none';
-        } else {
-          isDraggingImg = true; imgStartX = e.touches[0].clientX - imgTranslateX; imgStartY = e.touches[0].clientY - imgTranslateY; 
-          const img = document.getElementById('modal-img'); if(img) img.style.transition = 'none'; 
-        }
-      } 
-    }, { passive: false });
-
-    area.addEventListener('touchmove', e => {
-      if (e.touches.length === 2) { 
-        isSwipingTrack = false; e.preventDefault();
-        const d = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
-        if (initDist === 0) initDist = d;
-        else { scale *= d / initDist; scale = Math.min(Math.max(1, scale), 5); if (scale === 1) { imgTranslateX = 0; imgTranslateY = 0; } updateTransform(); initDist = d; }
-      } else if (e.touches.length === 1) { 
-        if (scale > 1 && isDraggingImg) { 
-          e.preventDefault(); imgTranslateX = e.touches[0].clientX - imgStartX; imgTranslateY = e.touches[0].clientY - imgStartY; updateTransform(); 
-        } else if (scale === 1 && isSwipingTrack) {
-          e.preventDefault(); trackTranslateX = e.touches[0].clientX - swipeStartX;
-          document.getElementById('slider-track').style.transform = `translateX(${trackTranslateX}px)`;
-        }
-      }
-    }, { passive: false });
-
-    area.addEventListener('touchend', e => { 
-      initDist = 0; 
-      if (isDraggingImg) { isDraggingImg = false; const img = document.getElementById('modal-img'); if(img) img.style.transition = 'transform 0.1s ease-out'; }
-      
-      if (isSwipingTrack) {
-        isSwipingTrack = false;
-        const track = document.getElementById('slider-track');
-        if (trackTranslateX < -70 && modalIdx < filteredFiles.length - 1) slideToNext();
-        else if (trackTranslateX > 70 && modalIdx > 0) slideToPrev();
-        else { track.style.transition = 'transform 0.3s ease-out'; track.style.transform = `translateX(0px)`; }
-      }
-    });
-
-    area.addEventListener('wheel', e => {
-      e.preventDefault();
-      scale += (e.deltaY < 0) ? 0.15 : -0.15; scale = Math.min(Math.max(1, scale), 5);
-      if (scale === 1) { imgTranslateX = 0; imgTranslateY = 0; } updateTransform();
-    }, { passive: false });
-    
-    area.addEventListener('mousedown', e => { 
-      if(scale > 1){ e.preventDefault(); isDraggingImg = true; imgStartX = e.clientX - imgTranslateX; imgStartY = e.clientY - imgTranslateY; const img = document.getElementById('modal-img'); if(img) img.style.transition = 'none'; }
-    });
+    area.addEventListener('touchstart', e => { if (e.touches.length === 1) { if (scale === 1) { isSwipingTrack = true; swipeStartX = e.touches[0].clientX; document.getElementById('slider-track').style.transition = 'none'; } else { isDraggingImg = true; imgStartX = e.touches[0].clientX - imgTranslateX; imgStartY = e.touches[0].clientY - imgTranslateY; const img = document.getElementById('modal-img'); if(img) img.style.transition = 'none'; } } }, { passive: false });
+    area.addEventListener('touchmove', e => { if (e.touches.length === 2) { isSwipingTrack = false; e.preventDefault(); const d = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY); if (initDist === 0) initDist = d; else { scale *= d / initDist; scale = Math.min(Math.max(1, scale), 5); if (scale === 1) { imgTranslateX = 0; imgTranslateY = 0; } updateTransform(); initDist = d; } } else if (e.touches.length === 1) { if (scale > 1 && isDraggingImg) { e.preventDefault(); imgTranslateX = e.touches[0].clientX - imgStartX; imgTranslateY = e.touches[0].clientY - imgStartY; updateTransform(); } else if (scale === 1 && isSwipingTrack) { e.preventDefault(); trackTranslateX = e.touches[0].clientX - swipeStartX; document.getElementById('slider-track').style.transform = `translateX(${trackTranslateX}px)`; } } }, { passive: false });
+    area.addEventListener('touchend', e => { initDist = 0; if (isDraggingImg) { isDraggingImg = false; const img = document.getElementById('modal-img'); if(img) img.style.transition = 'transform 0.1s ease-out'; } if (isSwipingTrack) { isSwipingTrack = false; const track = document.getElementById('slider-track'); if (trackTranslateX < -70 && modalIdx < filteredFiles.length - 1) slideToNext(); else if (trackTranslateX > 70 && modalIdx > 0) slideToPrev(); else { track.style.transition = 'transform 0.3s ease-out'; track.style.transform = `translateX(0px)`; } } });
+    area.addEventListener('wheel', e => { e.preventDefault(); scale += (e.deltaY < 0) ? 0.15 : -0.15; scale = Math.min(Math.max(1, scale), 5); if (scale === 1) { imgTranslateX = 0; imgTranslateY = 0; } updateTransform(); }, { passive: false });
+    area.addEventListener('mousedown', e => { if(scale > 1){ e.preventDefault(); isDraggingImg = true; imgStartX = e.clientX - imgTranslateX; imgStartY = e.clientY - imgTranslateY; const img = document.getElementById('modal-img'); if(img) img.style.transition = 'none'; } });
     window.addEventListener('mousemove', e => { if (!isDraggingImg) return; imgTranslateX = e.clientX - imgStartX; imgTranslateY = e.clientY - imgStartY; updateTransform(); });
     window.addEventListener('mouseup', () => { if(isDraggingImg) { isDraggingImg = false; const img = document.getElementById('modal-img'); if(img) img.style.transition = 'transform 0.1s ease-out'; } });
-    
-    window.addEventListener('keydown', e => {
-      if (document.getElementById('modal').style.display === 'flex') {
-        if (e.key === 'ArrowRight') slideToNext();
-        if (e.key === 'ArrowLeft') slideToPrev();
-        if (e.key === 'Escape') closeModal();
-      }
-    });
+    window.addEventListener('keydown', e => { if (document.getElementById('modal').style.display === 'flex') { if (e.key === 'ArrowRight') slideToNext(); if (e.key === 'ArrowLeft') slideToPrev(); if (e.key === 'Escape') closeModal(); } });
   }
 
+  async function executeDelete() { const pw = document.getElementById('del-pw-input').value; try { const res = await callGASJson({ action: 'deleteFile', fileId: filteredFiles[modalIdx].id, password: pw }); if(res.success) { showToast("削除しました"); location.reload(); } else showToast(res.message, true); } catch(e) { showToast("エラーが発生しました", true); } }
   function openDelete() { document.getElementById('delete-modal').style.display = 'flex'; }
   function closeDelete() { document.getElementById('delete-modal').style.display = 'none'; }
-  async function executeDelete() {
-    const pw = document.getElementById('del-pw-input').value;
-    try {
-      const res = await callGASJson({ action: 'deleteFile', fileId: filteredFiles[modalIdx].id, password: pw });
-      if(res.success) { showToast("削除しました"); location.reload(); } else showToast(res.message, true);
-    } catch(e) { showToast("エラーが発生しました", true); }
-  }
 </script>
 </body>
 </html>
