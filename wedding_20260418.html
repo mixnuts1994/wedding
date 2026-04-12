@@ -43,6 +43,7 @@
     .btn-gold { background: var(--gold); color: white; width: 100%; max-width: 350px; display: flex; flex-direction: column; justify-content: center; align-items: center; line-height: 1.4;}
     .btn-gold:disabled { background: #ccc; cursor: not-allowed; }
     .btn-outline { border: 1px solid var(--gold); background: transparent; color: var(--gold); width: 100%; max-width: 350px; display: flex; flex-direction: column; justify-content: center; align-items: center; line-height: 1.4;}
+    .btn-outline:disabled { border-color: #ccc; color: #ccc; cursor: not-allowed; }
 
     .progress-container { width: 100%; max-width: 350px; display: none; text-align: center;}
     .progress-bar { height: 6px; background: #f0f0f0; border-radius: 3px; overflow: hidden; margin-top: 15px; }
@@ -77,12 +78,13 @@
     .remember-label { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #666; width: 100%; max-width: 350px; margin-top: -10px; margin-bottom: 10px; cursor: pointer; }
     .remember-label input { width: 16px; height: 16px; cursor: pointer; accent-color: var(--gold); }
 
-    /* ロックオーバーレイ */
+    /* ★ ロックオーバーレイ（アニメーション対応） */
     #upload-lock-overlay {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(253, 251, 247, 0.95); z-index: 50; display: none; flex-direction: column;
       justify-content: center; align-items: center; text-align: center; padding: 30px; box-sizing: border-box;
       backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+      transition: opacity 1s ease; /* ★ フワッと消える魔法 */
     }
     #upload-lock-overlay h3 { font-family: 'Libre Baskerville', serif; font-style: italic; color: var(--gold); font-size: 24px; margin-bottom: 10px;}
     #upload-lock-overlay p { font-size: 14px; line-height: 1.8; color: var(--text); margin-top: 10px;}
@@ -100,8 +102,8 @@
   </header>
 
   <div class="tabs">
-    <div id="tab-upload" class="tab active" onclick="switchTab('upload')">Share Photos</div>
     <div id="tab-view" class="tab" onclick="switchTab('view')">Gallery</div>
+    <div id="tab-upload" class="tab" onclick="switchTab('upload')">Share Photos</div>
   </div>
 
   <div id="settings-section" class="panel">
@@ -130,10 +132,15 @@
     <button id="load-more-btn" class="btn btn-outline" style="width:100%; margin-top:30px; display:none;" onclick="loadMore()">もっと見る</button>
   </div>
 
-  <div id="upload-section" class="panel" style="display:flex;">
+  <div id="upload-section" class="panel" style="display:none;">
+    
     <div id="upload-lock-overlay">
       <h3>Ready to Share?</h3>
-      <p>お写真の登録は、挙式開始後の<br><strong style="color:var(--gold); font-size:16px;">16:00</strong> より解放いたします。<br><br>当日の素敵な瞬間を、<br>ぜひたくさん撮影してお待ちくださいませ📸</p>
+      <p>お写真の登録は、挙式開始後の<br><strong style="color:var(--gold); font-size:16px;">16:00</strong> より解放いたします。</p>
+      
+      <div id="countdown-display" style="font-size: 22px; font-weight: bold; color: var(--gold); margin: 15px 0; letter-spacing: 2px;"></div>
+      
+      <p>当日の素敵な瞬間を、<br>ぜひたくさん撮影してお待ちくださいませ📸</p>
     </div>
 
     <select id="upload-table"></select>
@@ -200,9 +207,17 @@
   const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyRfIJU14TkP6EcM9pbf7BeLZQc5zPOTrYfmwuAkggcs8Uz6m0dWT28Q_bqXTIHfZenyw/exec";
   const UNLOCK_DATE = new Date('2026-04-18T16:00:00+09:00').getTime();
 
+  // ★ テストモード用の時計ロジック（10秒前にワープ）
+  function getCurrentTime() {
+    if (localStorage.getItem('wedding_test_mode') === 'true') {
+      const realStart = parseInt(localStorage.getItem('wedding_test_start_real') || Date.now());
+      return UNLOCK_DATE - 10000 + (Date.now() - realStart); // 10秒前からスタート
+    }
+    return Date.now(); // 本番はリアルタイム
+  }
+
   function isUnlocked() {
-    if (localStorage.getItem('wedding_test_mode') === 'true') return true;
-    return Date.now() >= UNLOCK_DATE;
+    return getCurrentTime() >= UNLOCK_DATE;
   }
 
   function formatTableName(name) {
@@ -213,7 +228,15 @@
   function updateLockUI() {
     const unlocked = isUnlocked();
     document.getElementById('filter-table').style.display = unlocked ? 'block' : 'none';
-    document.getElementById('upload-lock-overlay').style.display = unlocked ? 'none' : 'flex';
+    
+    const overlay = document.getElementById('upload-lock-overlay');
+    if (unlocked) {
+      if (overlay.style.opacity !== '0') overlay.style.display = 'none'; // フェードアウト中以外は隠す
+    } else {
+      overlay.style.display = 'flex';
+      overlay.style.opacity = '1';
+    }
+    
     const dis = !unlocked;
     document.getElementById('upload-table').disabled = dis;
     document.getElementById('uploader-name').disabled = dis;
@@ -235,13 +258,60 @@
   let trackTranslateX = 0; let isSwipingTrack = false; let swipeStartX = 0;
 
   window.onload = () => { 
-    updateLockUI(); initTables(); loadData(); setupViewerControls(); loadSavedUserInfo();
-    updateAdminVisibility(); // 管理者画面の状態を確認
+    window.wasUnlocked = isUnlocked(); // ★ 背景監視用の状態記憶
     
+    updateLockUI(); 
+    initTables(); 
+    loadData(); 
+    setupViewerControls(); 
+    loadSavedUserInfo();
+    updateAdminVisibility(); 
+    
+    const lastTab = localStorage.getItem('wedding_last_tab') || 'upload';
+    switchTab(lastTab);
+
     if (localStorage.getItem('uploadInterrupted') === 'true') {
       showToast("前回、送信中に画面が閉じられたため、\n正しく保存されていないお写真がある可能性があります。", true);
       localStorage.removeItem('uploadInterrupted');
     }
+
+    // ★ 魔法の自動アンロック監視ループ（1秒に5回チェック）
+    setInterval(() => {
+      const now = getCurrentTime();
+      const currentlyUnlocked = now >= UNLOCK_DATE;
+
+      // カウントダウンの描画
+      if (!currentlyUnlocked) {
+        const diff = UNLOCK_DATE - now;
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const secs = Math.floor((diff % (1000 * 60)) / 1000);
+        
+        const timerEl = document.getElementById('countdown-display');
+        if (timerEl) {
+          if (days > 0) timerEl.innerText = `あと ${days}日と ${hours}時間`;
+          else if (hours > 0) timerEl.innerText = `あと ${hours}時間 ${mins}分`;
+          else if (mins > 0) timerEl.innerText = `あと ${mins}分 ${secs}秒`;
+          else timerEl.innerText = `あと ${secs} 秒！`;
+        }
+      }
+
+      // 時間が来たら自動でフェードアウト＆解禁！
+      if (!window.wasUnlocked && currentlyUnlocked) {
+        window.wasUnlocked = true;
+        showToast("✨ お写真の登録が解禁されました！ ✨");
+        
+        const overlay = document.getElementById('upload-lock-overlay');
+        if (overlay) overlay.style.opacity = '0'; // フワッと消える
+        
+        setTimeout(() => {
+          updateLockUI();
+          initTables(); // 【】を外したリストを再描画
+          renderGallery(); // ギャラリーのタグを再描画
+        }, 1000); // フェードアウトを待ってから裏側を更新
+      }
+    }, 200);
   };
 
   function showToast(m, isError = false) {
@@ -264,6 +334,8 @@
 
   function exitAdmin() {
     localStorage.removeItem('wedding_test_mode');
+    localStorage.removeItem('wedding_test_start_real');
+    window.wasUnlocked = isUnlocked();
     updateAdminVisibility();
     updateLockUI();
     initTables();
@@ -323,24 +395,35 @@
 
   async function saveTables() {
     const debugPw = document.getElementById('debug-pw').value;
+    
+    // ★ タイムマシン（テスト）モードの発動
     if (debugPw === '1234') {
       localStorage.setItem('wedding_test_mode', 'true');
-      showToast("🔐 認証に成功しました");
+      localStorage.setItem('wedding_test_start_real', Date.now().toString()); // 現在時刻をメモ
+      showToast("⏳ テストモード：15:59:50 にワープしました！");
       document.getElementById('debug-pw').value = '';
       updateAdminVisibility();
+      window.wasUnlocked = false; // 再ロックして自動解禁をトリガー
       updateLockUI();
       initTables();
       renderGallery();
+      switchTab('upload'); // カウントダウンを見せるために強制的にタブを移動
+      return;
+    } else if (debugPw === '0000') {
+      exitAdmin(); // リセット
       return;
     }
+
     const arr = document.getElementById('table-list-input').value.split(',').map(s=>s.trim()).filter(s=>s);
     try {
       await callGASJson({ action: 'saveTableNames', tables: arr });
-      showToast("設定を更新しました"); toggleSettings(); initTables(); updateLockUI(); renderGallery();
+      showToast("設定を更新しました"); 
+      toggleSettings(); initTables(); updateLockUI(); renderGallery();
     } catch(e) { showToast("保存に失敗しました", true); }
   }
 
   function switchTab(t) {
+    localStorage.setItem('wedding_last_tab', t);
     document.getElementById('view-section').style.display = t === 'view' ? 'block' : 'none';
     document.getElementById('upload-section').style.display = t === 'upload' ? 'flex' : 'none';
     document.getElementById('tab-view').classList.toggle('active', t === 'view');
@@ -445,7 +528,7 @@
     document.getElementById('slide-next').innerHTML = getSlideContent(modalIdx + 1, false);
     track.style.transition = 'none'; track.style.transform = 'translateX(0px)'; trackTranslateX = 0;
     const f = filteredFiles[modalIdx]; document.getElementById('modal-info').innerText = `${f.uploader} 様 (${formatTableName(f.table)})`;
-    document.getElementById('dl-btn').onclick = () => { const a = document.createElement('a'); a.href = `https://drive.google.com/uc?export=download&id=${f.id}`; a.click(); };
+    document.getElementById('dl-btn').onclick = () => { const a = document.createElement('a'); a.href = f.downloadUrl; a.download = 'wedding_photo'; document.body.appendChild(a); a.click(); document.body.removeChild(a); };
     document.getElementById('btn-prev').style.display = modalIdx > 0 ? 'block' : 'none';
     document.getElementById('btn-next').style.display = modalIdx < filteredFiles.length - 1 ? 'block' : 'none';
   }
