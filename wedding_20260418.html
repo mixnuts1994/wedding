@@ -20,16 +20,34 @@
     .tab { padding: 12px 20px; font-size: 14px; cursor: pointer; transition: 0.4s; letter-spacing: 1px; color: #999; }
     .tab.active { color: var(--gold); border-bottom: 2px solid var(--gold); font-weight: 500; }
 
-    .panel { background: var(--white); padding: 40px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); display: none; flex-direction: column; gap: 20px; align-items: center; position: relative; overflow: hidden; text-align: center;}
-    .panel input, .panel textarea, .panel select { width: 100%; max-width: 350px; border: 1px solid var(--light-gold); border-radius: 4px; padding: 12px; box-sizing: border-box; font-family: inherit; outline: none; text-align: center; }
+    .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    select, input[type="text"], input[type="password"] { padding: 12px; border: 1px solid #e0e0e0; border-radius: 4px; font-family: inherit; background: var(--white); color: var(--text); outline: none;}
+    
+    .gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .gallery-item { 
+      aspect-ratio: 1; position: relative; overflow: hidden; border-radius: 2px; background: #f0f0f0; cursor: pointer;
+      opacity: 0; transform: translateY(15px); animation: itemFadeIn 0.6s ease forwards;
+    }
+    @keyframes itemFadeIn { to { opacity: 1; transform: translateY(0); } }
 
-    .btn { padding: 15px 20px; border-radius: 4px; border: none; cursor: pointer; font-size: 14px; transition: 0.3s; font-family: inherit; font-weight: bold;}
-    .btn-gold { background: var(--gold); color: white; width: 100%; max-width: 350px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-    .btn-outline { border: 1px solid var(--gold); background: transparent; color: var(--gold); width: 100%; max-width: 350px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+    .gallery-item img { width: 100%; height: 100%; object-fit: cover; transition: 0.6s; pointer-events: none;}
+    .gallery-item:hover img { transform: scale(1.08); }
+    .video-icon { position: absolute; top: 10px; right: 10px; width: 24px; height: 24px; background: rgba(0,0,0,0.4); border-radius: 50%; display: flex; justify-content: center; align-items: center; }
+    .video-icon::after { content: ''; border-left: 8px solid white; border-top: 5px solid transparent; border-bottom: 5px solid transparent; margin-left: 2px; }
+    .uploader-tag { position: absolute; bottom: 0; background: linear-gradient(transparent, rgba(0,0,0,0.6)); color: white; width: 100%; font-size: 10px; padding: 10px 0 5px; text-align: center; }
+
+    .panel { background: var(--white); padding: 40px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); display: none; flex-direction: column; gap: 20px; align-items: center; position: relative; overflow: hidden; text-align: center;}
+    .panel input[type="text"], .panel input[type="password"], .panel select { width: 100%; max-width: 350px; border: 1px solid var(--light-gold); box-sizing: border-box;}
+
+    .btn { padding: 15px 20px; border-radius: 4px; border: none; cursor: pointer; font-size: 14px; transition: 0.3s; font-family: inherit; letter-spacing: 1px; font-weight: bold;}
+    .btn-gold { background: var(--gold); color: white; width: 100%; max-width: 350px; display: flex; flex-direction: column; justify-content: center; align-items: center; line-height: 1.4; margin: 0 auto;}
+    .btn-gold:disabled { background: #ccc; cursor: not-allowed; }
+    .btn-outline { border: 1px solid var(--gold); background: transparent; color: var(--gold); width: 100%; max-width: 350px; display: flex; flex-direction: column; justify-content: center; align-items: center; line-height: 1.4; margin: 0 auto;}
+    .btn-outline:disabled { border-color: #ccc; color: #ccc; cursor: not-allowed; }
 
     /* Movieタブ センタリング設定 */
-    #movie-list { display: flex; flex-direction: column; align-items: center; width: 100%; }
-    .movie-card { width: 100%; max-width: 500px; background: white; border-radius: 8px; overflow: hidden; margin-bottom: 40px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); text-align: left; position: relative; animation: fadeIn 0.6s ease; }
+    #movie-list { display: flex; flex-direction: column; align-items: center; width: 100%; gap: 30px; padding-bottom: 50px; }
+    .movie-card { width: 100%; max-width: 500px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.05); text-align: left; position: relative; animation: fadeIn 0.6s ease; }
     .movie-title { font-size: 18px; font-weight: bold; color: var(--gold); padding: 20px 20px 10px; margin: 0; text-align: center; }
     .movie-thumb-container { position: relative; cursor: pointer; width: 100%; aspect-ratio: 16/9; background: #000; }
     .movie-thumb-container img { width: 100%; height: 100%; object-fit: cover; opacity: 0.8; }
@@ -42,31 +60,50 @@
     #add-movie-fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: var(--gold); color: white; border-radius: 50%; display: none; justify-content: center; align-items: center; font-size: 30px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); cursor: pointer; z-index: 80; transition: transform 0.2s; }
     #add-movie-fab:active { transform: scale(0.9); }
 
-    /* ギャラリー/モーダル設定 */
-    .gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-    .gallery-item { aspect-ratio: 1; position: relative; overflow: hidden; cursor: pointer; background: #f0f0f0; }
-    .gallery-item img { width: 100%; height: 100%; object-fit: cover; }
-    .uploader-tag { position: absolute; bottom: 0; background: linear-gradient(transparent, rgba(0,0,0,0.6)); color: white; width: 100%; font-size: 10px; padding: 10px 0 5px; text-align: center; }
-    
-    #modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(253, 251, 247, 0.98); display: none; z-index: 100; flex-direction: column; touch-action: none; }
+    /* 編集用ミニモーダル */
+    #edit-movie-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 200; display: none; align-items: center; justify-content: center; }
+    .edit-box { background: white; padding: 25px; border-radius: 8px; width: 90%; max-width: 400px; max-height: 85vh; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; text-align: center; }
+    .edit-box input, .edit-box textarea { width: 100%; padding: 10px; border: 1px solid var(--light-gold); border-radius: 4px; box-sizing: border-box; font-family: inherit; }
+
+    .progress-container { width: 100%; max-width: 350px; display: none; text-align: center;}
+    .progress-bar { height: 6px; background: #f0f0f0; border-radius: 3px; overflow: hidden; margin-top: 15px; }
+    .progress-fill { height: 100%; background: var(--gold); width: 0%; transition: width 0.4s ease; }
+    .progress-fill.active { animation: pulseBar 1.5s infinite; }
+    @keyframes pulseBar { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+    .warning-text { color: #d32f2f; font-size: 12px; font-weight: bold; margin-top: 15px; display: none; background: #ffebee; padding: 10px; border-radius: 4px; line-height: 1.5;}
+
+    #modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(253, 251, 247, 0.98); display: none; z-index: 100; flex-direction: column; touch-action: none; overflow: hidden;}
     .modal-header { display: flex; justify-content: space-between; padding: 20px; color: var(--gold); z-index: 20; background: rgba(253, 251, 247, 0.8);}
     .modal-content { flex: 1; display: flex; align-items: center; position: relative; width: 100%; overflow: hidden; }
-    .slider-track { display: flex; width: 300%; height: 100%; position: absolute; left: -100%; will-change: transform; }
-    .slide { width: 33.3333%; height: 100%; display: flex; justify-content: center; align-items: center; flex-shrink: 0; overflow: hidden;}
     .swipe-edge { position: absolute; top: 20%; bottom: 20%; width: 40px; z-index: 15; }
     .swipe-edge-left { left: 0; } .swipe-edge-right { right: 0; }
-
-    #upload-lock-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(253, 251, 247, 0.95); z-index: 50; display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 30px; transition: opacity 1s ease; }
+    .slider-track { display: flex; width: 300%; height: 100%; position: absolute; left: -100%; will-change: transform; }
+    .slide { width: 33.3333%; height: 100%; display: flex; justify-content: center; align-items: center; flex-shrink: 0; overflow: hidden;}
+    .modal-footer { padding: 30px; display: flex; justify-content: center; gap: 20px; z-index: 20; background: rgba(253, 251, 247, 0.8);}
     
-    #edit-movie-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 200; display: none; align-items: center; justify-content: center; }
-    .edit-box { background: white; padding: 25px; border-radius: 8px; width: 90%; max-width: 400px; max-height: 85vh; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+    #toast { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); background: var(--text); color: white; padding: 12px 30px; border-radius: 4px; z-index: 1000; display: none; font-size: 13px; box-shadow: 0 10px 20px rgba(0,0,0,0.2); white-space: pre-wrap; line-height:1.5;}
+    
+    #delete-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; z-index: 200; align-items: center; justify-content: center; }
+    .del-box { background: white; padding: 30px; border-radius: 8px; text-align: center; width: 280px; box-sizing: border-box; }
 
-    #toast { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); background: var(--text); color: white; padding: 12px 30px; border-radius: 4px; z-index: 1000; display: none; font-size: 13px; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
-    .remember-label { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #666; width: 100%; max-width: 350px; margin-top: -10px; margin-bottom: 10px; cursor: pointer; justify-content: center; }
-    .remember-label input { width: 16px; height: 16px; accent-color: var(--gold); }
-
+    .fade-in { animation: fadeIn 0.4s ease-in-out forwards; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     @media (max-width: 600px) { .gallery { grid-template-columns: repeat(3, 1fr); gap: 5px; } h1 { font-size: 1.8rem; } }
+    
+    .remember-label { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #666; width: 100%; max-width: 350px; margin-top: -10px; margin-bottom: 10px; cursor: pointer; justify-content: center; }
+    .remember-label input { width: 16px; height: 16px; cursor: pointer; accent-color: var(--gold); }
+
+    /* ロックオーバーレイ */
+    #upload-lock-overlay {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(253, 251, 247, 0.95); z-index: 50; display: none; flex-direction: column;
+      justify-content: center; align-items: center; text-align: center; padding: 30px; box-sizing: border-box;
+      backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+      transition: opacity 1s ease;
+    }
+    #upload-lock-overlay h3 { font-family: 'Libre Baskerville', serif; font-style: italic; color: var(--gold); font-size: 24px; margin-bottom: 10px;}
+    #upload-lock-overlay p { font-size: 14px; line-height: 1.8; color: var(--text); margin-top: 10px;}
   </style>
 </head>
 <body>
@@ -87,15 +124,17 @@
   </div>
 
   <div id="settings-section" class="panel">
-    <h3 style="color:var(--gold); margin:0;">Admin Settings</h3>
-    <div id="settings-auth" style="width:100%; display:flex; flex-direction:column; align-items:center; margin-top:15px;">
-      <input type="password" id="debug-pw" placeholder="管理者パスワード">
-      <button class="btn btn-gold" style="margin-top:15px;" onclick="saveTables()">認証する</button>
+    <h3 style="color:var(--gold); margin:0; text-align: center;">Admin Settings</h3>
+    
+    <div id="settings-auth" style="width: 100%; display: flex; flex-direction: column; align-items: center; margin-top: 15px;">
+      <input type="password" id="debug-pw" placeholder="管理者パスワード" style="margin-bottom:15px; text-align: center;">
+      <button class="btn btn-gold" onclick="saveTables()">認証する</button>
     </div>
-    <div id="settings-admin-content" style="display:none; width:100%; flex-direction:column; gap:15px; align-items:center; margin-top:15px;">
-      <p style="color:var(--gold); font-size:13px;">グループ名の編集</p>
-      <textarea id="table-list-input" style="height:80px;"></textarea>
-      <p style="font-size:10px; color:#888; margin:0;">※各グループをカンマ「,」で区切ってください</p>
+
+    <div id="settings-admin-content" style="display:none; width: 100%; flex-direction: column; gap: 15px; align-items: center; margin-top: 15px;">
+      <p style="color:var(--gold); margin:0; font-size: 13px; text-align: center;">グループ名の編集</p>
+      <textarea id="table-list-input" style="width:100%; max-width:350px; height:80px; padding:10px; border: 1px solid var(--light-gold); border-radius: 4px; outline: none; font-family: inherit; box-sizing: border-box; text-align: center;"></textarea>
+      <p style="font-size:10px; color:#888; margin:0; text-align: center;">※各グループをカンマ「,」で区切ってください</p>
       <button class="btn btn-gold" onclick="saveTables()">変更を保存して完了</button>
       <button class="btn btn-outline" style="font-size: 12px; padding: 10px;" onclick="exitAdmin()">ログアウト</button>
     </div>
@@ -106,7 +145,7 @@
       <select id="filter-table" onchange="renderGallery()"><option value="ALL">全てのグループ</option></select>
       <div style="cursor:pointer; color:var(--gold); font-size:13px;" onclick="loadData()">最新に更新 🔄</div>
     </div>
-    <div id="gallery" class="gallery">読み込み中...</div>
+    <div id="gallery" class="gallery">お写真を読み込み中...</div>
     <button id="load-more-btn" class="btn btn-outline" style="width:100%; margin-top:30px; display:none;" onclick="loadMore()">もっと見る</button>
   </div>
 
@@ -115,28 +154,39 @@
   </div>
 
   <div id="upload-section" class="panel" style="display:none;">
+    
     <div id="upload-lock-overlay">
       <h3>Ready to Share?</h3>
       <p>お写真の登録は、挙式開始後の<br><strong style="color:var(--gold); font-size:16px;">16:00</strong> より解放いたします。</p>
-      <div id="countdown-display" style="font-size:22px; font-weight:bold; color:var(--gold); margin:15px 0; letter-spacing: 2px;"></div>
+      <div id="countdown-display" style="font-size: 22px; font-weight: bold; color: var(--gold); margin: 15px 0; letter-spacing: 2px;"></div>
       <p>当日の素敵な瞬間を、<br>ぜひたくさん撮影してお待ちくださいませ📸</p>
     </div>
+
     <select id="upload-table"></select>
     <input type="text" id="uploader-name" placeholder="お名前・ニックネーム">
     <input type="password" id="delete-pw" placeholder="削除用パスワード（必須）">
-    <label class="remember-label"><input type="checkbox" id="remember-me" checked> 情報を記憶する</label>
+    
+    <label class="remember-label">
+      <input type="checkbox" id="remember-me" checked> 端末に入力情報を記憶する
+    </label>
+    
     <button id="browser-btn" class="btn btn-gold" onclick="document.getElementById('file-input').click()">
       <span style="font-size: 15px;">🌐 ブラウザで登録</span>
       <span style="font-size: 11px; font-weight: normal; margin-top: 4px;">（お写真はこちら）</span>
     </button>
     <input type="file" id="file-input" multiple accept="image/*" style="display:none" onchange="startUpload()">
+    
     <button id="drive-btn" class="btn btn-outline" style="margin-top: 5px;" onclick="startDriveUpload()">
       <span style="font-size: 15px;">📁 Google Driveで登録</span>
       <span style="font-size: 11px; font-weight: normal; margin-top: 4px;">（動画・バックグラウンド登録はこちら）</span>
     </button>
+
     <div id="progress-container" class="progress-container">
       <div id="progress-text" style="font-size:12px; margin-bottom:5px;">準備中...</div>
       <div class="progress-bar"><div id="progress-fill" class="progress-fill active"></div></div>
+      <div id="upload-warning" class="warning-text">
+        ⚠️ 送信中は画面を閉じたり、<br>別のアプリを開かないでください！
+      </div>
     </div>
   </div>
 </div>
@@ -152,7 +202,7 @@
     <div style="text-align:center; font-size:12px; color:var(--gold);">▼ サムネイル / 解説画像</div>
     <button class="btn btn-outline" style="padding:10px; font-size:12px;" onclick="document.getElementById('m-edit-file').click()">画像を選択</button>
     <input type="file" id="m-edit-file" accept="image/*" style="display:none">
-    <div id="m-edit-img-status" style="font-size:10px; color:#999;">画像未選択</div>
+    <div id="m-edit-img-status" style="font-size:10px; color:#999;">画像未選択（変更しない場合はそのまま）</div>
     <div style="display:flex; gap:10px; margin-top:10px;">
       <button class="btn btn-gold" style="flex:1;" onclick="saveMovieContent()">保存する</button>
       <button class="btn btn-outline" style="flex:1;" onclick="closeMovieEditor()">キャンセル</button>
@@ -161,35 +211,40 @@
 </div>
 
 <div id="modal">
-  <div class="modal-header"><div id="modal-info"></div><div onclick="closeModal()" style="font-size:28px; cursor:pointer; padding:5px 15px;">✕</div></div>
+  <div class="modal-header">
+    <div id="modal-info"></div>
+    <div onclick="closeModal()" style="font-size:28px; cursor:pointer; padding: 5px 15px; z-index: 20;">✕</div>
+  </div>
   <div class="modal-content" id="zoom-area">
-    <div class="swipe-edge swipe-edge-left"></div><div class="swipe-edge swipe-edge-right"></div>
-    <button id="btn-prev" onclick="slideToPrev()" style="position:absolute; left:10px; background:none; border:none; font-size:40px; color:var(--gold); z-index:20;">‹</button>
-    <div class="slider-track" id="slider-track"><div class="slide" id="slide-prev"></div><div class="slide" id="slide-curr"></div><div class="slide" id="slide-next"></div></div>
-    <button id="btn-next" onclick="slideToNext()" style="position:absolute; right:10px; background:none; border:none; font-size:40px; color:var(--gold); z-index:20;">›</button>
+    <div class="swipe-edge swipe-edge-left"></div>
+    <div class="swipe-edge swipe-edge-right"></div>
+    <button id="btn-prev" onclick="slideToPrev()" style="position:absolute; left:10px; background:none; border:none; font-size:40px; color:var(--gold); z-index:20; padding:10px; display:none;">‹</button>
+    <div class="slider-track" id="slider-track">
+      <div class="slide" id="slide-prev"></div>
+      <div class="slide" id="slide-curr"></div>
+      <div class="slide" id="slide-next"></div>
+    </div>
+    <button id="btn-next" onclick="slideToNext()" style="position:absolute; right:10px; background:none; border:none; font-size:40px; color:var(--gold); z-index:20; padding:10px; display:none;">›</button>
   </div>
   <div class="modal-footer">
     <button class="btn btn-outline" id="dl-btn" style="width:auto; padding:10px 20px;">保存</button>
-    <button class="btn" style="color:#e57373; background:none; width:auto;" onclick="openDelete()">削除</button>
+    <button class="btn" style="color:#e57373; background:none; width:auto; padding:10px;" onclick="openDelete()">削除</button>
   </div>
 </div>
 
 <div id="delete-modal">
-  <div class="del-box"><p>削除パスワード</p><input type="password" id="del-pw-input"><button class="btn btn-gold" onclick="executeDelete()">削除を確定</button><p onclick="closeDelete()" style="margin-top:15px; font-size:12px; color:#888; cursor:pointer;">キャンセル</p></div>
+  <div class="del-box">
+    <p style="margin-bottom:20px;">削除パスワード</p>
+    <input type="password" id="del-pw-input" style="width:100%; margin-bottom:20px; padding:10px; box-sizing:border-box; text-align: center;">
+    <button class="btn btn-gold" onclick="executeDelete()" style="width:100%;">削除を確定</button>
+    <p onclick="closeDelete()" style="margin-top:15px; font-size:12px; color:#888; cursor:pointer;">キャンセル</p>
+  </div>
 </div>
 
 <script>
-  const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwUSKr06528YDb3U5g9t1bJHv-2201fZZGIe20fxYYDWeA0mE0ft185jJKjOeEdgChDrA/exec";
+  // ★ 新しいGASのURL
+  const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwHQnrk14i1Kkz7cCWbNQI4-N4JyJDFgtu7XQqaNUGNQtrJNEBbLbmhekwGibaCtp8pcA/exec";
   const UNLOCK_DATE = new Date('2026-04-18T16:00:00+09:00').getTime();
-
-  let allFiles = []; let filteredFiles = []; let showCount = 0; let modalIdx = 0;
-  let movies = []; let editingMovieIdx = -1;
-  let trackTranslateX = 0; let isSwipingTrack = false; let swipeStartX = 0;
-
-  async function callGASJson(payload) {
-    const response = await fetch(GAS_API_URL, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
-    return await response.json();
-  }
 
   function getCurrentTime() {
     if (localStorage.getItem('wedding_test_mode') === 'true') {
@@ -199,48 +254,120 @@
     return Date.now();
   }
 
-  function isUnlocked() { return getCurrentTime() >= UNLOCK_DATE; }
+  function isUnlocked() {
+    return getCurrentTime() >= UNLOCK_DATE;
+  }
 
-  window.onload = () => { 
-    window.wasUnlocked = isUnlocked();
-    initTables(); loadData(); loadMovies(); setupViewerControls(); loadSavedUserInfo(); updateAdminVisibility();
-    const lastTab = localStorage.getItem('wedding_last_tab') || 'upload';
-    switchTab(lastTab);
-    setInterval(updateSystemState, 200);
-  };
-
-  function updateSystemState() {
-    const now = getCurrentTime();
-    const currentlyUnlocked = now >= UNLOCK_DATE;
-    if (!currentlyUnlocked) {
-      const diff = UNLOCK_DATE - now;
-      const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const secs = Math.floor((diff % (1000 * 60)) / 1000);
-      const timerEl = document.getElementById('countdown-display');
-      if (timerEl) timerEl.innerText = `あと ${mins}分 ${secs}秒`;
-    }
-    if (!window.wasUnlocked && currentlyUnlocked) {
-      window.wasUnlocked = true; showToast("✨ お写真の登録が解禁されました！ ✨");
-      const overlay = document.getElementById('upload-lock-overlay');
-      if (overlay) { overlay.style.opacity = '0'; overlay.style.pointerEvents = 'none'; }
-      setTimeout(() => { updateLockUI(); initTables(); renderGallery(); }, 1000);
-    }
+  function formatTableName(name) {
+    if (isUnlocked()) return name;
+    return name.replace(/^【.*?】/, '');
   }
 
   function updateLockUI() {
     const unlocked = isUnlocked();
     document.getElementById('filter-table').style.display = unlocked ? 'block' : 'none';
+    
     const overlay = document.getElementById('upload-lock-overlay');
-    if (unlocked) { overlay.style.display = 'none'; overlay.style.pointerEvents = 'none'; }
-    else { overlay.style.display = 'flex'; overlay.style.opacity = '1'; overlay.style.pointerEvents = 'auto'; }
-    ['upload-table','uploader-name','delete-pw','browser-btn','drive-btn'].forEach(id => document.getElementById(id).disabled = !unlocked);
+    if (unlocked) {
+      if (overlay.style.opacity !== '0') {
+        overlay.style.display = 'none';
+        overlay.style.pointerEvents = 'none';
+      }
+    } else {
+      overlay.style.display = 'flex';
+      overlay.style.opacity = '1';
+      overlay.style.pointerEvents = 'auto';
+    }
+    
+    const dis = !unlocked;
+    document.getElementById('upload-table').disabled = dis;
+    document.getElementById('uploader-name').disabled = dis;
+    document.getElementById('delete-pw').disabled = dis;
+    document.getElementById('browser-btn').disabled = dis;
+    document.getElementById('drive-btn').disabled = dis;
   }
 
-  function switchTab(t) {
-    localStorage.setItem('wedding_last_tab', t);
-    ['view','movie','upload'].forEach(id => document.getElementById(id+'-section').style.display = (id === t ? (id==='view'?'block':'flex') : 'none'));
-    ['view','movie','upload'].forEach(id => document.getElementById('tab-'+id).classList.toggle('active', id === t));
-    if (t === 'upload') updateLockUI();
+  async function callGASJson(payload) {
+    const response = await fetch(GAS_API_URL, {
+      method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload)
+    });
+    return await response.json();
+  }
+
+  let allFiles = []; let filteredFiles = []; let showCount = 0; let modalIdx = 0;
+  let movies = []; let editingMovieIdx = -1;
+  let scale = 1; let imgTranslateX = 0; let imgTranslateY = 0; 
+  let isDraggingImg = false; let imgStartX = 0; let imgStartY = 0;
+  let trackTranslateX = 0; let isSwipingTrack = false; let swipeStartX = 0;
+
+  window.onload = () => { 
+    window.wasUnlocked = isUnlocked(); 
+    
+    updateLockUI(); 
+    initTables(); 
+    loadData(); 
+    loadMovies();
+    setupViewerControls(); 
+    loadSavedUserInfo();
+    updateAdminVisibility(); 
+    
+    const lastTab = localStorage.getItem('wedding_last_tab') || 'upload';
+    switchTab(lastTab);
+
+    if (localStorage.getItem('uploadInterrupted') === 'true') {
+      showToast("前回、送信中に画面が閉じられたため、\n正しく保存されていないお写真がある可能性があります。", true);
+      localStorage.removeItem('uploadInterrupted');
+    }
+
+    setInterval(() => {
+      const now = getCurrentTime();
+      const currentlyUnlocked = now >= UNLOCK_DATE;
+
+      if (!currentlyUnlocked) {
+        const diff = UNLOCK_DATE - now;
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const secs = Math.floor((diff % (1000 * 60)) / 1000);
+        
+        const timerEl = document.getElementById('countdown-display');
+        if (timerEl) {
+          if (days > 0) timerEl.innerText = `あと ${days}日と ${hours}時間`;
+          else if (hours > 0) timerEl.innerText = `あと ${hours}時間 ${mins}分`;
+          else if (mins > 0) timerEl.innerText = `あと ${mins}分 ${secs}秒`;
+          else timerEl.innerText = `あと ${secs} 秒！`;
+        }
+      }
+
+      if (!window.wasUnlocked && currentlyUnlocked) {
+        window.wasUnlocked = true;
+        showToast("✨ お写真の登録が解禁されました！ ✨");
+        
+        const overlay = document.getElementById('upload-lock-overlay');
+        if (overlay) {
+          overlay.style.opacity = '0'; 
+          overlay.style.pointerEvents = 'none';
+        }
+        
+        setTimeout(() => {
+          updateLockUI();
+          initTables(); 
+          renderGallery(); 
+        }, 1000); 
+      }
+    }, 200);
+  };
+
+  function showToast(m, isError = false) {
+    const t = document.getElementById('toast');
+    t.innerText = m; t.style.background = isError ? '#d32f2f' : 'var(--text)';
+    t.style.display = 'block';
+    setTimeout(() => t.style.display = 'none', 5000);
+  }
+
+  function toggleSettings() {
+    const s = document.getElementById('settings-section');
+    s.style.display = (s.style.display === 'flex') ? 'none' : 'flex';
   }
 
   function updateAdminVisibility() {
@@ -253,48 +380,139 @@
     document.querySelectorAll('.movie-admin-tools').forEach(el => el.style.display = isAdmin ? 'flex' : 'none');
   }
 
-  async function saveTables() {
-    const debugPw = document.getElementById('debug-pw').value;
-    if (debugPw === '1234') {
-      localStorage.setItem('wedding_test_mode', 'true');
-      localStorage.setItem('wedding_test_start_real', Date.now().toString());
-      showToast("⏳ 管理者モード：認証成功");
-      document.getElementById('debug-pw').value = '';
-      updateAdminVisibility(); window.wasUnlocked = false; updateLockUI(); initTables(); renderMovies(); switchTab('upload');
-      return;
-    } else if (debugPw === '0000') {
-      exitAdmin(); document.getElementById('debug-pw').value = ''; return;
-    }
-    const arr = document.getElementById('table-list-input').value.split(',').map(s=>s.trim()).filter(s=>s);
-    try { await callGASJson({ action: 'saveTableNames', tables: arr }); showToast("設定を更新しました"); toggleSettings(); initTables(); renderGallery(); } catch(e) { showToast("失敗", true); }
-  }
-
   function exitAdmin() {
-    localStorage.removeItem('wedding_test_mode'); localStorage.removeItem('wedding_test_start_real');
-    window.wasUnlocked = isUnlocked(); updateAdminVisibility(); updateLockUI(); initTables(); renderGallery(); renderMovies();
+    localStorage.removeItem('wedding_test_mode');
+    localStorage.removeItem('wedding_test_start_real');
+    window.wasUnlocked = isUnlocked();
+    updateAdminVisibility();
+    updateLockUI();
+    initTables();
+    renderGallery();
+    renderMovies();
     showToast("ログアウトしました");
   }
 
+  function loadSavedUserInfo() {
+    const savedName = localStorage.getItem('wedding_name');
+    const savedPw = localStorage.getItem('wedding_pw');
+    const rememberMe = localStorage.getItem('wedding_remember');
+    if (rememberMe === 'true') {
+      document.getElementById('remember-me').checked = true;
+      if (savedName) document.getElementById('uploader-name').value = savedName;
+      if (savedPw) document.getElementById('delete-pw').value = savedPw;
+    } else if (rememberMe === 'false') {
+      document.getElementById('remember-me').checked = false;
+    }
+  }
+
+  function saveUserInfo() {
+    const isRemember = document.getElementById('remember-me').checked;
+    localStorage.setItem('wedding_remember', isRemember); 
+    if (isRemember) {
+      localStorage.setItem('wedding_group', document.getElementById('upload-table').value);
+      localStorage.setItem('wedding_name', document.getElementById('uploader-name').value);
+      localStorage.setItem('wedding_pw', document.getElementById('delete-pw').value);
+    } else {
+      localStorage.removeItem('wedding_group'); localStorage.removeItem('wedding_name'); localStorage.removeItem('wedding_pw');
+    }
+  }
+
+  async function initTables() {
+    try {
+      const res = await callGASJson({ action: 'getTableNames' });
+      if (!res.success) return;
+      let tables = res.tables;
+      const defaultCheck = tables.join(',');
+      if (defaultCheck.includes('新郎側ゲスト') || defaultCheck.includes('Happy Group')) {
+        tables = ['【豊田市】高校友人','【名鉄名古屋】職場友人','【刈谷市】高校友人','【知多半田】大学学部友人','【大同町】大学サークル友人','【東岡崎】新郎親族','【豊明】新婦親族','新郎新婦より'];
+      }
+      document.getElementById('table-list-input').value = tables.join(',');
+      const f = document.getElementById('filter-table');
+      const u = document.getElementById('upload-table');
+      f.innerHTML = '<option value="ALL">全てのグループ</option>';
+      u.innerHTML = '<option value="" disabled selected>グループを選択</option>';
+      tables.forEach(t => { 
+        const disp = formatTableName(t);
+        f.innerHTML += `<option value="${t}">${disp}</option>`; u.innerHTML += `<option value="${t}">${disp}</option>`; 
+      });
+      const savedGroup = localStorage.getItem('wedding_group');
+      if (savedGroup && localStorage.getItem('wedding_remember') === 'true') {
+        for (let i = 0; i < u.options.length; i++) { if (u.options[i].value === savedGroup) u.selectedIndex = i; }
+      }
+    } catch(e) {}
+  }
+
+  async function saveTables() {
+    const debugPw = document.getElementById('debug-pw').value;
+    
+    if (debugPw === '1234') {
+      localStorage.setItem('wedding_test_mode', 'true');
+      localStorage.setItem('wedding_test_start_real', Date.now().toString());
+      showToast("⏳ 認証成功（15:59:50 にワープしました）");
+      document.getElementById('debug-pw').value = '';
+      updateAdminVisibility();
+      window.wasUnlocked = false; 
+      updateLockUI();
+      initTables();
+      renderGallery();
+      renderMovies();
+      switchTab('upload'); 
+      return;
+    } else if (debugPw === '0000') {
+      exitAdmin(); 
+      document.getElementById('debug-pw').value = '';
+      return;
+    }
+
+    const arr = document.getElementById('table-list-input').value.split(',').map(s=>s.trim()).filter(s=>s);
+    try {
+      await callGASJson({ action: 'saveTableNames', tables: arr });
+      showToast("設定を更新しました"); 
+      toggleSettings(); initTables(); updateLockUI(); renderGallery();
+    } catch(e) { showToast("保存に失敗しました", true); }
+  }
+
+  function switchTab(t) {
+    localStorage.setItem('wedding_last_tab', t);
+    document.getElementById('view-section').style.display = t === 'view' ? 'block' : 'none';
+    document.getElementById('movie-section').style.display = t === 'movie' ? 'block' : 'none';
+    document.getElementById('upload-section').style.display = t === 'upload' ? 'flex' : 'none';
+    
+    document.getElementById('tab-view').classList.toggle('active', t === 'view');
+    document.getElementById('tab-movie').classList.toggle('active', t === 'movie');
+    document.getElementById('tab-upload').classList.toggle('active', t === 'upload');
+    
+    if (t === 'upload') updateLockUI();
+  }
+
+  /* ================= Movie機能 ================= */
   async function loadMovies() {
-    try { const res = await callGASJson({ action: 'getMovies' }); movies = res.movies || []; renderMovies(); } catch(e) {}
+    try {
+      const res = await callGASJson({ action: 'getMovies' });
+      movies = res.movies || []; renderMovies();
+    } catch(e) { document.getElementById('movie-list').innerHTML = "<p style='margin-top:40px; color:#e57373;'>動画の読み込みに失敗しました。</p>"; }
   }
 
   function renderMovies() {
     const list = document.getElementById('movie-list');
-    if (movies.length === 0) { list.innerHTML = "<p style='margin-top:40px; color:#999;'>現在、動画はありません</p>"; return; }
+    if (movies.length === 0) { list.innerHTML = "<p style='margin-top:40px; color:#999;'>まだ動画がありません</p>"; return; }
+    
     const isAdmin = localStorage.getItem('wedding_test_mode') === 'true';
     list.innerHTML = movies.map((m, idx) => `
       <div class="movie-card">
         ${m.title ? `<div class="movie-title">${m.title}</div>` : ''}
-        <div class="movie-thumb-container" onclick="playMovie('${m.videoUrl}')">
-          <img src="${m.imgUrl || 'https://placehold.jp/24/c5a059/ffffff/800x450.png?text=NO+IMAGE'}">
-          <div class="play-overlay"></div>
-        </div>
+        ${m.videoUrl ? `
+          <div class="movie-thumb-container" onclick="playMovie('${m.videoUrl}')">
+            <img src="${m.imgUrl || 'https://placehold.jp/24/c5a059/ffffff/800x450.png?text=TAP+TO+PLAY'}">
+            <div class="play-overlay"></div>
+          </div>
+        ` : (m.imgUrl ? `<img src="${m.imgUrl}" class="movie-ex-img">` : '')}
         ${m.comment ? `<div class="movie-comment">${m.comment.replace(/\n/g, '<br>')}</div>` : ''}
-        ${m.imgUrl ? `<img src="${m.imgUrl}" class="movie-ex-img">` : ''}
-        <div class="movie-admin-tools" style="display:${isAdmin?'flex':'none'}">
-          <button class="btn" style="background:var(--gold); color:white; padding:5px 10px; font-size:10px; border-radius:15px;" onclick="openMovieEditor(${idx})">✎ 編集</button>
-          <button class="btn" style="background:#e57373; color:white; padding:5px 10px; font-size:10px; border-radius:15px;" onclick="deleteMovie(${idx})">✖ 削除</button>
+        ${(m.imgUrl && m.videoUrl) ? `<img src="${m.imgUrl}" class="movie-ex-img">` : ''}
+        
+        <div class="movie-admin-tools" style="display:${isAdmin ? 'flex' : 'none'}">
+          <button class="btn" style="background:var(--gold); color:white; padding:5px 12px; font-size:11px; border-radius:15px;" onclick="openMovieEditor(${idx})">✎ 編集</button>
+          <button class="btn" style="background:#e57373; color:white; padding:5px 12px; font-size:11px; border-radius:15px;" onclick="deleteMovie(${idx})">✖ 削除</button>
         </div>
       </div>
     `).join('');
@@ -310,7 +528,9 @@
     openModal(-1);
     document.getElementById('modal-info').innerText = "Wedding Movie";
     document.getElementById('slide-curr').innerHTML = `<iframe src="${embedUrl}" style="width:100%; height:100%; border:none; background:#000;" allow="autoplay; fullscreen"></iframe>`;
-    document.getElementById('btn-prev').style.display = 'none'; document.getElementById('btn-next').style.display = 'none'; document.getElementById('dl-btn').style.display = 'none';
+    document.getElementById('btn-prev').style.display = 'none';
+    document.getElementById('btn-next').style.display = 'none';
+    document.getElementById('dl-btn').style.display = 'none';
   }
 
   function openMovieEditor(idx = -1) {
@@ -319,7 +539,7 @@
     document.getElementById('m-edit-title').value = m.title;
     document.getElementById('m-edit-video-url').value = m.videoUrl;
     document.getElementById('m-edit-comment').value = m.comment;
-    document.getElementById('m-edit-img-status').innerText = idx >= 0 ? "（画像は登録済み）" : "画像未選択";
+    document.getElementById('m-edit-img-status').innerText = idx >= 0 && m.imgUrl ? "画像登録済み（変更する場合のみ選択）" : "画像未選択";
     document.getElementById('edit-movie-modal').style.display = 'flex';
   }
 
@@ -330,53 +550,49 @@
     const videoUrl = document.getElementById('m-edit-video-url').value;
     const comment = document.getElementById('m-edit-comment').value;
     const fileInput = document.getElementById('m-edit-file');
+    
     showToast("保存中...⏳");
     let imgUrl = editingMovieIdx >= 0 ? movies[editingMovieIdx].imgUrl : "";
+
     if (fileInput.files.length > 0) {
       const file = fileInput.files[0];
-      const base64 = await new Promise(res => { const r = new FileReader(); r.onload = e => res(e.target.result.split(',')[1]); r.readAsDataURL(file); });
-      const upRes = await callGASJson({ action: 'uploadFileFast', base64Data: base64, fileName: "thumb_"+Date.now(), mimeType: file.type, folderId: "MOVIE_ASSETS", uploaderName: "Admin", tableName: "Movie" });
+      const base64 = await new Promise(res => {
+        const r = new FileReader(); r.onload = e => res(e.target.result.split(',')[1]); r.readAsDataURL(file);
+      });
+      const upRes = await callGASJson({ action: 'uploadFileFast', base64Data: base64, fileName: "movie_thumb_"+Date.now(), mimeType: file.type, folderId: "MOVIE_ASSETS", uploaderName: "Admin", tableName: "Movie" });
       if (upRes.success) imgUrl = `https://drive.google.com/thumbnail?id=${upRes.fileId}&sz=w1000`;
     }
+
     const newMovie = { title, videoUrl, comment, imgUrl };
-    if (editingMovieIdx >= 0) movies[editingMovieIdx] = newMovie; else movies.unshift(newMovie);
+    if (editingMovieIdx >= 0) movies[editingMovieIdx] = newMovie;
+    else movies.unshift(newMovie);
+
     const res = await callGASJson({ action: 'saveMovies', movies: movies });
     if (res.success) { showToast("保存しました！"); closeMovieEditor(); renderMovies(); }
   }
 
-  async function deleteMovie(idx) { if (confirm("この動画を削除しますか？")) { movies.splice(idx, 1); await callGASJson({ action: 'saveMovies', movies: movies }); renderMovies(); } }
-
-  function showToast(m) { const t = document.getElementById('toast'); t.innerText = m; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 3000); }
-  function toggleSettings() { const s = document.getElementById('settings-section'); s.style.display = (s.style.display === 'flex' ? 'none' : 'flex'); }
-  
-  async function initTables() {
-    try {
-      const res = await callGASJson({ action: 'getTableNames' });
-      if (!res.success) return;
-      document.getElementById('table-list-input').value = res.tables.join(',');
-      const u = document.getElementById('upload-table'); const f = document.getElementById('filter-table');
-      u.innerHTML = '<option value="" disabled selected>グループを選択</option>';
-      f.innerHTML = '<option value="ALL">全てのグループ</option>';
-      res.tables.forEach(t => { 
-        const disp = isUnlocked() ? t : t.replace(/^【.*?】/, '');
-        u.innerHTML += `<option value="${t}">${disp}</option>`; f.innerHTML += `<option value="${t}">${disp}</option>`;
-      });
-      if (localStorage.getItem('wedding_remember') === 'true') {
-        const savedG = localStorage.getItem('wedding_group');
-        for (let i = 0; i < u.options.length; i++) if (u.options[i].value === savedG) u.selectedIndex = i;
-      }
-    } catch(e) {}
+  async function deleteMovie(idx) {
+    if (!confirm("この動画コンテンツを削除してもよろしいですか？")) return;
+    movies.splice(idx, 1);
+    await callGASJson({ action: 'saveMovies', movies: movies });
+    renderMovies();
   }
 
+  /* ================= ギャラリー・アップロード機能 ================= */
   async function loadData() {
-    const res = await callGASJson({ action: 'getAllFiles' });
-    allFiles = res.files || []; renderGallery();
+    document.getElementById('gallery').innerHTML = '<p style="grid-column:1/-1; text-align:center;">お写真を集めています...</p>';
+    try {
+      const res = await callGASJson({ action: 'getAllFiles' });
+      allFiles = res.files || []; renderGallery();
+    } catch(e) { document.getElementById('gallery').innerHTML = '<p style="grid-column:1/-1; text-align:center; color:#e57373;">通信エラーが発生しました。</p>'; }
   }
 
   function renderGallery() {
     const filter = document.getElementById('filter-table').value;
     filteredFiles = (filter === "ALL") ? allFiles : allFiles.filter(f => f.table === filter);
-    showCount = 0; document.getElementById('gallery').innerHTML = ''; loadMore();
+    showCount = 0; document.getElementById('gallery').innerHTML = '';
+    if(filteredFiles.length === 0) document.getElementById('gallery').innerHTML = '<p style="grid-column:1/-1; text-align:center;">お写真がありません</p>';
+    loadMore();
   }
 
   function loadMore() {
@@ -384,75 +600,117 @@
     const end = Math.min(showCount + 24, filteredFiles.length);
     for(let i = showCount; i < end; i++) {
       const f = filteredFiles[i];
-      const div = document.createElement('div'); div.className = 'gallery-item';
+      const div = document.createElement('div');
+      div.className = 'gallery-item';
+      div.style.animationDelay = `${(i % 24) * 0.05}s`;
       div.onclick = () => openModal(i);
-      div.innerHTML = `<img src="${f.thumbnail}" loading="lazy"><div class="uploader-tag">${f.uploader}</div>`;
+      div.innerHTML = `<img src="${f.thumbnail}" loading="lazy">${f.mime.includes('video')?'<div class="video-icon"></div>':''}<div class="uploader-tag">${f.uploader} (${formatTableName(f.table)})</div>`;
       g.appendChild(div);
     }
-    showCount = end; document.getElementById('load-more-btn').style.display = showCount < filteredFiles.length ? 'block' : 'none';
+    showCount = end;
+    document.getElementById('load-more-btn').style.display = showCount < filteredFiles.length ? 'block' : 'none';
   }
 
-  function openModal(idx) { modalIdx = idx; document.getElementById('modal').style.display = 'flex'; if (idx !== -1) renderSlides(); }
-  function closeModal() { document.getElementById('modal').style.display = 'none'; document.getElementById('slide-curr').innerHTML = ''; }
-  function renderSlides() {
-    const f = filteredFiles[modalIdx];
-    document.getElementById('slide-prev').innerHTML = getSlideHTML(modalIdx-1);
-    document.getElementById('slide-curr').innerHTML = getSlideHTML(modalIdx);
-    document.getElementById('slide-next').innerHTML = getSlideHTML(modalIdx+1);
-    document.getElementById('modal-info').innerText = `${f.uploader} 様`;
-    document.getElementById('dl-btn').style.display = 'block';
-    document.getElementById('dl-btn').onclick = () => { const a = document.createElement('a'); a.href = `https://drive.google.com/uc?export=download&id=${f.id}`; a.click(); };
-    document.getElementById('btn-prev').style.display = modalIdx > 0 ? 'block' : 'none';
-    document.getElementById('btn-next').style.display = modalIdx < filteredFiles.length - 1 ? 'block' : 'none';
-    document.getElementById('slider-track').style.transform = 'translateX(0)';
-  }
-  function getSlideHTML(i) {
-    if (i<0 || i>=filteredFiles.length) return '';
-    const f = filteredFiles[i];
-    return f.mime.includes('video') ? `<iframe src="${f.previewUrl}" style="width:100%; height:100%; border:none;"></iframe>` : `<img src="${f.thumbnail}" style="max-width:100%; max-height:100%; object-fit:contain;">`;
-  }
-  function slideToNext() { if (modalIdx < filteredFiles.length - 1) { modalIdx++; renderSlides(); } }
-  function slideToPrev() { if (modalIdx > 0) { modalIdx--; renderSlides(); } }
-
-  function setupViewerControls() {
-    const area = document.getElementById('zoom-area');
-    area.addEventListener('touchstart', e => { if(e.touches.length===1) { isSwipingTrack=true; swipeStartX=e.touches[0].clientX; } }, {passive:true});
-    area.addEventListener('touchmove', e => { if(isSwipingTrack) { trackTranslateX = e.touches[0].clientX - swipeStartX; document.getElementById('slider-track').style.transform = `translateX(${trackTranslateX}px)`; } }, {passive:true});
-    area.addEventListener('touchend', e => { if(!isSwipingTrack) return; isSwipingTrack=false; if(trackTranslateX < -70) slideToNext(); else if(trackTranslateX > 70) slideToPrev(); else document.getElementById('slider-track').style.transform = 'translateX(0)'; });
-    window.addEventListener('keydown', e => { if (document.getElementById('modal').style.display === 'flex') { if (e.key === 'ArrowRight') slideToNext(); if (e.key === 'ArrowLeft') slideToPrev(); if (e.key === 'Escape') closeModal(); } });
-  }
-
-  function loadSavedUserInfo() {
-    if (localStorage.getItem('wedding_remember')==='true') {
-      document.getElementById('uploader-name').value = localStorage.getItem('wedding_name') || '';
-      document.getElementById('delete-pw').value = localStorage.getItem('wedding_pw') || '';
-    }
-  }
-  async function startUpload() {
-    const input = document.getElementById('file-input'); if(input.files.length===0) return;
-    const table = document.getElementById('upload-table').value;
-    const name = document.getElementById('uploader-name').value;
-    const pw = document.getElementById('delete-pw').value;
-    if(!table || !name || !pw) { alert("全項目入力してください"); return; }
-    if (document.getElementById('remember-me').checked) { localStorage.setItem('wedding_remember', 'true'); localStorage.setItem('wedding_group', table); localStorage.setItem('wedding_name', name); localStorage.setItem('wedding_pw', pw); }
-    document.getElementById('progress-container').style.display = 'block';
-    const prep = await callGASJson({ action: 'prepareFolder', tableName: table, uploaderName: name });
-    for (let i=0; i<input.files.length; i++) {
-      const f = input.files[i];
-      const base64 = await new Promise(res => { const r = new FileReader(); r.onload = e => res(e.target.result.split(',')[1]); r.readAsDataURL(f); });
-      await callGASJson({ action: 'uploadFileFast', base64Data: base64, fileName: f.name, mimeType: f.type, folderId: prep.folderId, uploaderName: name, password: pw, tableName: table });
-      document.getElementById('progress-fill').style.width = ((i+1)/input.files.length*100) + '%';
-    }
-    showToast("送信完了！"); location.reload();
-  }
   async function startDriveUpload() {
     const table = document.getElementById('upload-table').value;
     const name = document.getElementById('uploader-name').value;
-    if(!table || !name) { alert("グループとお名前を入力してください"); return; }
-    const prep = await callGASJson({ action: 'prepareFolder', tableName: table, uploaderName: name });
-    window.location.href = `https://drive.google.com/drive/folders/${prep.folderId}?usp=drive_link`;
+    if(!table || !name) { showToast("グループとお名前を選択してください\n（パスワードは任意です）", true); return; }
+    saveUserInfo();
+    const btn = document.getElementById('drive-btn');
+    btn.disabled = true; btn.innerHTML = "専用フォルダを準備中...⏳";
+    let newWin = null; try { newWin = window.open('', '_blank'); } catch(e) {}
+    if (newWin) { newWin.document.write('<meta name="viewport" content="width=device-width, initial-scale=1"><p style="text-align:center; margin-top:50px; font-family:sans-serif; color:#c5a059;">あなた専用のフォルダを準備しています...<br>そのままお待ちください。</p>'); }
+    try {
+      const prepRes = await callGASJson({ action: 'prepareFolder', tableName: table, uploaderName: name });
+      if (!prepRes.success) throw new Error("フォルダの準備に失敗しました");
+      const driveUrl = `https://drive.google.com/drive/folders/${prepRes.folderId}?usp=drive_link`;
+      if (newWin && !newWin.closed) { newWin.location.href = driveUrl; } else { window.location.href = driveUrl; }
+    } catch(e) { if (newWin) newWin.close(); showToast("フォルダの作成に失敗しました。\n" + e.message, true); }
+    finally { setTimeout(() => { btn.disabled = false; btn.innerHTML = "<span style='font-size: 15px;'>📁 Google Driveで登録</span><span style='font-size: 11px; font-weight: normal; margin-top: 4px;'>（動画・バックグラウンド登録はこちら）</span>"; }, 2000); }
   }
-  async function executeDelete() { const pw = document.getElementById('del-pw-input').value; try { const res = await callGASJson({ action: 'deleteFile', fileId: filteredFiles[modalIdx].id, password: pw }); if(res.success) { showToast("削除しました"); location.reload(); } else showToast(res.message, true); } catch(e) {} }
+
+  async function startUpload() {
+    const input = document.getElementById('file-input');
+    if (input.files.length === 0) return; 
+    const table = document.getElementById('upload-table').value;
+    const name = document.getElementById('uploader-name').value;
+    const pw = document.getElementById('delete-pw').value;
+    if(!table || !name || !pw) { showToast("グループ・お名前・パスワードの\n全項目を入力してください", true); input.value = ""; return; }
+    saveUserInfo(); localStorage.setItem('uploadInterrupted', 'true');
+    document.getElementById('browser-btn').disabled = true; document.getElementById('drive-btn').disabled = true;
+    document.getElementById('progress-container').style.display = 'block'; document.getElementById('upload-warning').style.display = 'block';
+    document.getElementById('progress-fill').style.width = '10%';
+    try {
+      const prepRes = await callGASJson({ action: 'prepareFolder', tableName: table, uploaderName: name });
+      if (!prepRes.success) throw new Error("フォルダの準備に失敗しました");
+      const folderId = prepRes.folderId;
+      const files = Array.from(input.files);
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i]; document.getElementById('progress-text').innerText = `${files.length}枚中 ${i+1}枚目を送信中...`;
+        const base64Str = await new Promise((res, rej) => {
+          const reader = new FileReader(); reader.onload = e => res(e.target.result.split(',')[1]);
+          reader.onerror = () => rej(new Error("読み込みエラー")); reader.readAsDataURL(file);
+        });
+        const uploadRes = await callGASJson({ action: 'uploadFileFast', base64Data: base64Str, fileName: file.name, mimeType: file.type, folderId: folderId, uploaderName: name, password: pw, tableName: table });
+        if (!uploadRes.success) throw new Error("送信に失敗しました");
+        const progress = 10 + Math.floor(((i+1)/files.length) * 90); document.getElementById('progress-fill').style.width = progress + '%';
+        await new Promise(r => setTimeout(r, 1000)); 
+      }
+      showToast("送信が完了しました！"); localStorage.removeItem('uploadInterrupted');
+      input.value = ""; document.getElementById('progress-container').style.display = 'none'; document.getElementById('upload-warning').style.display = 'none';
+      document.getElementById('browser-btn').disabled = false; document.getElementById('drive-btn').disabled = false; loadData(); switchTab('view');
+    } catch(e) { alert("🚨 エラー詳細 🚨\n\n" + e.message); document.getElementById('browser-btn').disabled = false; document.getElementById('drive-btn').disabled = false; document.getElementById('progress-container').style.display = 'none'; document.getElementById('upload-warning').style.display = 'none'; localStorage.removeItem('uploadInterrupted'); }
+  }
+
+  function getSlideContent(idx, isCurrent) {
+    if (idx < 0 || idx >= filteredFiles.length) return "";
+    const f = filteredFiles[idx];
+    if (f.mime.includes('video')) { return `<iframe src="${f.previewUrl}" style="width:100%; height:100%; border:none; background:#000;" allow="autoplay" allowfullscreen></iframe>`; }
+    else { return `<img src="${f.thumbnail}" ${isCurrent ? 'id="modal-img"' : ''} style="max-width:100%; max-height:100%; object-fit:contain; pointer-events:none; user-select:none;">`; }
+  }
+
+  function renderSlides() {
+    const track = document.getElementById('slider-track');
+    document.getElementById('slide-prev').innerHTML = getSlideContent(modalIdx - 1, false);
+    document.getElementById('slide-curr').innerHTML = getSlideContent(modalIdx, true);
+    document.getElementById('slide-next').innerHTML = getSlideContent(modalIdx + 1, false);
+    track.style.transition = 'none'; track.style.transform = 'translateX(0px)'; trackTranslateX = 0;
+    const f = filteredFiles[modalIdx]; document.getElementById('modal-info').innerText = `${f.uploader} 様 (${formatTableName(f.table)})`;
+    document.getElementById('dl-btn').onclick = () => { const a = document.createElement('a'); a.href = f.downloadUrl; a.download = 'wedding_photo'; document.body.appendChild(a); a.click(); document.body.removeChild(a); };
+    document.getElementById('btn-prev').style.display = modalIdx > 0 ? 'block' : 'none';
+    document.getElementById('btn-next').style.display = modalIdx < filteredFiles.length - 1 ? 'block' : 'none';
+  }
+
+  function updateTransform() { const img = document.getElementById('modal-img'); if(img) img.style.transform = `translate(${imgTranslateX}px, ${imgTranslateY}px) scale(${scale})`; }
+  
+  function openModal(idx) { 
+    modalIdx = idx; scale = 1; imgTranslateX = 0; imgTranslateY = 0; 
+    document.getElementById('modal').style.display = 'flex'; 
+    if (idx !== -1) {
+      document.getElementById('dl-btn').style.display = 'block';
+      renderSlides(); 
+    }
+  }
+  
+  function closeModal() { document.getElementById('modal').style.display = 'none'; document.getElementById('slide-curr').innerHTML = ''; }
+  
+  function slideToNext() { if (modalIdx >= filteredFiles.length - 1 || modalIdx === -1) return; const track = document.getElementById('slider-track'); track.style.transition = 'transform 0.3s ease-out'; track.style.transform = `translateX(-33.3333%)`; setTimeout(() => { modalIdx++; scale = 1; imgTranslateX = 0; imgTranslateY = 0; renderSlides(); }, 300); }
+  function slideToPrev() { if (modalIdx <= 0 || modalIdx === -1) return; const track = document.getElementById('slider-track'); track.style.transition = 'transform 0.3s ease-out'; track.style.transform = `translateX(33.3333%)`; setTimeout(() => { modalIdx--; scale = 1; imgTranslateX = 0; imgTranslateY = 0; renderSlides(); }, 300); }
+
+  function setupViewerControls() {
+    const area = document.getElementById('zoom-area');
+    let initDist = 0;
+    area.addEventListener('touchstart', e => { if (e.touches.length === 1) { if (scale === 1) { isSwipingTrack = true; swipeStartX = e.touches[0].clientX; document.getElementById('slider-track').style.transition = 'none'; } else { isDraggingImg = true; imgStartX = e.touches[0].clientX - imgTranslateX; imgStartY = e.touches[0].clientY - imgTranslateY; const img = document.getElementById('modal-img'); if(img) img.style.transition = 'none'; } } }, { passive: false });
+    area.addEventListener('touchmove', e => { if (e.touches.length === 2) { isSwipingTrack = false; e.preventDefault(); const d = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY); if (initDist === 0) initDist = d; else { scale *= d / initDist; scale = Math.min(Math.max(1, scale), 5); if (scale === 1) { imgTranslateX = 0; imgTranslateY = 0; } updateTransform(); initDist = d; } } else if (e.touches.length === 1) { if (scale > 1 && isDraggingImg) { e.preventDefault(); imgTranslateX = e.touches[0].clientX - imgStartX; imgTranslateY = e.touches[0].clientY - imgStartY; updateTransform(); } else if (scale === 1 && isSwipingTrack) { e.preventDefault(); trackTranslateX = e.touches[0].clientX - swipeStartX; document.getElementById('slider-track').style.transform = `translateX(${trackTranslateX}px)`; } } }, { passive: false });
+    area.addEventListener('touchend', e => { initDist = 0; if (isDraggingImg) { isDraggingImg = false; const img = document.getElementById('modal-img'); if(img) img.style.transition = 'transform 0.1s ease-out'; } if (isSwipingTrack) { isSwipingTrack = false; const track = document.getElementById('slider-track'); if (trackTranslateX < -70 && modalIdx < filteredFiles.length - 1 && modalIdx !== -1) slideToNext(); else if (trackTranslateX > 70 && modalIdx > 0 && modalIdx !== -1) slideToPrev(); else { track.style.transition = 'transform 0.3s ease-out'; track.style.transform = `translateX(0px)`; } } });
+    area.addEventListener('wheel', e => { e.preventDefault(); scale += (e.deltaY < 0) ? 0.15 : -0.15; scale = Math.min(Math.max(1, scale), 5); if (scale === 1) { imgTranslateX = 0; imgTranslateY = 0; } updateTransform(); }, { passive: false });
+    area.addEventListener('mousedown', e => { if(scale > 1){ e.preventDefault(); isDraggingImg = true; imgStartX = e.clientX - imgTranslateX; imgStartY = e.clientY - imgTranslateY; const img = document.getElementById('modal-img'); if(img) img.style.transition = 'none'; } });
+    window.addEventListener('mousemove', e => { if (!isDraggingImg) return; imgTranslateX = e.clientX - imgStartX; imgTranslateY = e.clientY - imgStartY; updateTransform(); });
+    window.addEventListener('mouseup', () => { if(isDraggingImg) { isDraggingImg = false; const img = document.getElementById('modal-img'); if(img) img.style.transition = 'transform 0.1s ease-out'; } });
+    window.addEventListener('keydown', e => { if (document.getElementById('modal').style.display === 'flex') { if (e.key === 'ArrowRight') slideToNext(); if (e.key === 'ArrowLeft') slideToPrev(); if (e.key === 'Escape') closeModal(); } });
+  }
+
+  async function executeDelete() { const pw = document.getElementById('del-pw-input').value; try { const res = await callGASJson({ action: 'deleteFile', fileId: filteredFiles[modalIdx].id, password: pw }); if(res.success) { showToast("削除しました"); location.reload(); } else showToast(res.message, true); } catch(e) { showToast("エラーが発生しました", true); } }
   function openDelete() { document.getElementById('delete-modal').style.display = 'flex'; }
   function closeDelete() { document.getElementById('delete-modal').style.display = 'none'; }
 </script>
