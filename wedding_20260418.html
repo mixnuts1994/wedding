@@ -27,18 +27,20 @@
     .btn-gold { background: var(--gold); color: white; width: 100%; max-width: 350px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
     .btn-outline { border: 1px solid var(--gold); background: transparent; color: var(--gold); width: 100%; max-width: 350px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
 
-    /* Movieカードデザイン */
-    .movie-card { background: white; border-radius: 8px; overflow: hidden; margin-bottom: 40px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); text-align: left; position: relative; animation: fadeIn 0.6s ease; }
-    .movie-title { font-size: 18px; font-weight: bold; color: var(--gold); padding: 20px 20px 10px; margin: 0; }
+    /* Movieタブ センタリング設定 */
+    #movie-list { display: flex; flex-direction: column; align-items: center; width: 100%; }
+    .movie-card { width: 100%; max-width: 500px; background: white; border-radius: 8px; overflow: hidden; margin-bottom: 40px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); text-align: left; position: relative; animation: fadeIn 0.6s ease; }
+    .movie-title { font-size: 18px; font-weight: bold; color: var(--gold); padding: 20px 20px 10px; margin: 0; text-align: center; }
     .movie-thumb-container { position: relative; cursor: pointer; width: 100%; aspect-ratio: 16/9; background: #000; }
     .movie-thumb-container img { width: 100%; height: 100%; object-fit: cover; opacity: 0.8; }
     .play-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; background: rgba(197, 160, 89, 0.9); border-radius: 50%; display: flex; justify-content: center; align-items: center; }
     .play-overlay::after { content: ''; border-left: 20px solid white; border-top: 12px solid transparent; border-bottom: 12px solid transparent; margin-left: 5px; }
-    .movie-comment { padding: 15px 20px; font-size: 14px; color: #555; line-height: 1.6; border-bottom: 1px solid #f9f9f9; }
+    .movie-comment { padding: 15px 20px; font-size: 14px; color: #555; line-height: 1.6; text-align: center; }
     .movie-ex-img { width: 100%; height: auto; display: block; }
-    .movie-admin-tools { position: absolute; top: 10px; right: 10px; display: none; gap: 10px; }
+    .movie-admin-tools { position: absolute; top: 10px; right: 10px; display: none; gap: 8px; z-index: 5; }
     
-    #add-movie-fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: var(--gold); color: white; border-radius: 50%; display: none; justify-content: center; align-items: center; font-size: 30px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); cursor: pointer; z-index: 80; }
+    #add-movie-fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: var(--gold); color: white; border-radius: 50%; display: none; justify-content: center; align-items: center; font-size: 30px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); cursor: pointer; z-index: 80; transition: transform 0.2s; }
+    #add-movie-fab:active { transform: scale(0.9); }
 
     /* ギャラリー/モーダル設定 */
     .gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
@@ -95,7 +97,7 @@
       <textarea id="table-list-input" style="height:80px;"></textarea>
       <p style="font-size:10px; color:#888; margin:0;">※各グループをカンマ「,」で区切ってください</p>
       <button class="btn btn-gold" onclick="saveTables()">変更を保存して完了</button>
-      <button class="btn btn-outline" style="font-size:12px;" onclick="exitAdmin()">ログアウト</button>
+      <button class="btn btn-outline" style="font-size: 12px; padding: 10px;" onclick="exitAdmin()">ログアウト</button>
     </div>
   </div>
 
@@ -123,18 +125,15 @@
     <input type="text" id="uploader-name" placeholder="お名前・ニックネーム">
     <input type="password" id="delete-pw" placeholder="削除用パスワード（必須）">
     <label class="remember-label"><input type="checkbox" id="remember-me" checked> 情報を記憶する</label>
-    
     <button id="browser-btn" class="btn btn-gold" onclick="document.getElementById('file-input').click()">
       <span style="font-size: 15px;">🌐 ブラウザで登録</span>
       <span style="font-size: 11px; font-weight: normal; margin-top: 4px;">（お写真はこちら）</span>
     </button>
     <input type="file" id="file-input" multiple accept="image/*" style="display:none" onchange="startUpload()">
-    
     <button id="drive-btn" class="btn btn-outline" style="margin-top: 5px;" onclick="startDriveUpload()">
       <span style="font-size: 15px;">📁 Google Driveで登録</span>
       <span style="font-size: 11px; font-weight: normal; margin-top: 4px;">（動画・バックグラウンド登録はこちら）</span>
     </button>
-    
     <div id="progress-container" class="progress-container">
       <div id="progress-text" style="font-size:12px; margin-bottom:5px;">準備中...</div>
       <div class="progress-bar"><div id="progress-fill" class="progress-fill active"></div></div>
@@ -149,8 +148,8 @@
     <h3 style="margin:0; color:var(--gold);">Movieコンテンツの編集</h3>
     <input type="text" id="m-edit-title" placeholder="動画のタイトル">
     <input type="text" id="m-edit-video-url" placeholder="動画のURL（Google Drive等）">
-    <textarea id="m-edit-comment" placeholder="コメント（空欄可）" style="height:80px; text-align: left;"></textarea>
-    <div style="text-align:left; font-size:12px; color:var(--gold);">▼ サムネイル / 解説画像</div>
+    <textarea id="m-edit-comment" placeholder="コメント（空欄可）" style="height:80px; text-align: center;"></textarea>
+    <div style="text-align:center; font-size:12px; color:var(--gold);">▼ サムネイル / 解説画像</div>
     <button class="btn btn-outline" style="padding:10px; font-size:12px;" onclick="document.getElementById('m-edit-file').click()">画像を選択</button>
     <input type="file" id="m-edit-file" accept="image/*" style="display:none">
     <div id="m-edit-img-status" style="font-size:10px; color:#999;">画像未選択</div>
@@ -248,6 +247,8 @@
     const isAdmin = localStorage.getItem('wedding_test_mode') === 'true';
     document.getElementById('settings-auth').style.display = isAdmin ? 'none' : 'flex';
     document.getElementById('settings-admin-content').style.display = isAdmin ? 'flex' : 'none';
+    
+    // Movie管理機能の出し分け
     document.getElementById('add-movie-fab').style.display = isAdmin ? 'flex' : 'none';
     document.querySelectorAll('.movie-admin-tools').forEach(el => el.style.display = isAdmin ? 'flex' : 'none');
   }
@@ -257,7 +258,7 @@
     if (debugPw === '1234') {
       localStorage.setItem('wedding_test_mode', 'true');
       localStorage.setItem('wedding_test_start_real', Date.now().toString());
-      showToast("⏳ 15:59:50 にワープしました！");
+      showToast("⏳ 管理者モード：認証成功");
       document.getElementById('debug-pw').value = '';
       updateAdminVisibility(); window.wasUnlocked = false; updateLockUI(); initTables(); renderMovies(); switchTab('upload');
       return;
@@ -280,7 +281,7 @@
 
   function renderMovies() {
     const list = document.getElementById('movie-list');
-    if (movies.length === 0) { list.innerHTML = "<p style='margin-top:40px; color:#999;'>まだ動画がありません</p>"; return; }
+    if (movies.length === 0) { list.innerHTML = "<p style='margin-top:40px; color:#999;'>現在、動画はありません</p>"; return; }
     const isAdmin = localStorage.getItem('wedding_test_mode') === 'true';
     list.innerHTML = movies.map((m, idx) => `
       <div class="movie-card">
@@ -292,8 +293,8 @@
         ${m.comment ? `<div class="movie-comment">${m.comment.replace(/\n/g, '<br>')}</div>` : ''}
         ${m.imgUrl ? `<img src="${m.imgUrl}" class="movie-ex-img">` : ''}
         <div class="movie-admin-tools" style="display:${isAdmin?'flex':'none'}">
-          <button class="btn" style="background:var(--gold); color:white; padding:5px 10px; font-size:10px;" onclick="openMovieEditor(${idx})">編集</button>
-          <button class="btn" style="background:#e57373; color:white; padding:5px 10px; font-size:10px;" onclick="deleteMovie(${idx})">削除</button>
+          <button class="btn" style="background:var(--gold); color:white; padding:5px 10px; font-size:10px; border-radius:15px;" onclick="openMovieEditor(${idx})">✎ 編集</button>
+          <button class="btn" style="background:#e57373; color:white; padding:5px 10px; font-size:10px; border-radius:15px;" onclick="deleteMovie(${idx})">✖ 削除</button>
         </div>
       </div>
     `).join('');
@@ -307,7 +308,7 @@
       embedUrl = `https://drive.google.com/file/d/${id}/preview`;
     }
     openModal(-1);
-    document.getElementById('modal-info').innerText = "Movie Player";
+    document.getElementById('modal-info').innerText = "Wedding Movie";
     document.getElementById('slide-curr').innerHTML = `<iframe src="${embedUrl}" style="width:100%; height:100%; border:none; background:#000;" allow="autoplay; fullscreen"></iframe>`;
     document.getElementById('btn-prev').style.display = 'none'; document.getElementById('btn-next').style.display = 'none'; document.getElementById('dl-btn').style.display = 'none';
   }
@@ -318,7 +319,7 @@
     document.getElementById('m-edit-title').value = m.title;
     document.getElementById('m-edit-video-url').value = m.videoUrl;
     document.getElementById('m-edit-comment').value = m.comment;
-    document.getElementById('m-edit-img-status').innerText = idx >= 0 ? "登録済み" : "未選択";
+    document.getElementById('m-edit-img-status').innerText = idx >= 0 ? "（画像は登録済み）" : "画像未選択";
     document.getElementById('edit-movie-modal').style.display = 'flex';
   }
 
@@ -343,7 +344,7 @@
     if (res.success) { showToast("保存しました！"); closeMovieEditor(); renderMovies(); }
   }
 
-  async function deleteMovie(idx) { if (confirm("削除しますか？")) { movies.splice(idx, 1); await callGASJson({ action: 'saveMovies', movies: movies }); renderMovies(); } }
+  async function deleteMovie(idx) { if (confirm("この動画を削除しますか？")) { movies.splice(idx, 1); await callGASJson({ action: 'saveMovies', movies: movies }); renderMovies(); } }
 
   function showToast(m) { const t = document.getElementById('toast'); t.innerText = m; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 3000); }
   function toggleSettings() { const s = document.getElementById('settings-section'); s.style.display = (s.style.display === 'flex' ? 'none' : 'flex'); }
@@ -385,7 +386,7 @@
       const f = filteredFiles[i];
       const div = document.createElement('div'); div.className = 'gallery-item';
       div.onclick = () => openModal(i);
-      div.innerHTML = `<img src="${f.thumbnail}" loading="lazy"><div class="uploader-tag">${f.uploader} (${isUnlocked()?f.table:f.table.replace(/^【.*?】/,'')})</div>`;
+      div.innerHTML = `<img src="${f.thumbnail}" loading="lazy"><div class="uploader-tag">${f.uploader}</div>`;
       g.appendChild(div);
     }
     showCount = end; document.getElementById('load-more-btn').style.display = showCount < filteredFiles.length ? 'block' : 'none';
