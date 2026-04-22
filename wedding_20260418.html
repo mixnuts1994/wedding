@@ -71,8 +71,6 @@
     .progress-fill.active { animation: pulseBar 1.5s infinite; }
     @keyframes pulseBar { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
-    .warning-text { color: #d32f2f; font-size: 12px; font-weight: bold; margin-top: 15px; display: none; background: #ffebee; padding: 10px; border-radius: 4px; line-height: 1.5;}
-
     #modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(253, 251, 247, 0.98); display: none; z-index: 100; flex-direction: column; touch-action: none; overflow: hidden;}
     .modal-header { display: flex; justify-content: space-between; padding: 20px; color: var(--gold); z-index: 20; background: rgba(253, 251, 247, 0.8);}
     .modal-content { flex: 1; display: flex; align-items: center; position: relative; width: 100%; overflow: hidden; }
@@ -87,6 +85,10 @@
     #delete-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; z-index: 200; align-items: center; justify-content: center; }
     .del-box { background: white; padding: 30px; border-radius: 8px; text-align: center; width: 280px; box-sizing: border-box; }
 
+    /* ★ 対策③：失敗した画像を一覧表示する専用のエラーモーダル */
+    #error-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 300; display: none; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
+    .error-box { background: white; border-radius: 8px; padding: 30px 20px; width: 100%; max-width: 400px; max-height: 80vh; overflow-y: auto; text-align: center; }
+
     .fade-in { animation: fadeIn 0.4s ease-in-out forwards; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     @media (max-width: 600px) { .gallery { grid-template-columns: repeat(3, 1fr); gap: 5px; } h1 { font-size: 1.8rem; } }
@@ -94,7 +96,6 @@
     .remember-label { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #666; width: 100%; max-width: 350px; margin-top: -10px; margin-bottom: 10px; cursor: pointer; justify-content: center; }
     .remember-label input { width: 16px; height: 16px; cursor: pointer; accent-color: var(--gold); }
 
-    /* ロックオーバーレイ */
     #upload-lock-overlay {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(253, 251, 247, 0.95); z-index: 50; display: none; flex-direction: column;
@@ -143,7 +144,7 @@
   <div id="view-section" style="display:none;">
     <div class="toolbar">
       <select id="filter-table" onchange="renderGallery()"><option value="ALL">全てのグループ</option></select>
-      <div style="cursor:pointer; color:var(--gold); font-size:13px;" onclick="loadData()">最新に更新 🔄</div>
+      <div style="cursor:pointer; color:var(--gold); font-size:13px;" onclick="loadData(true)">最新に更新 🔄</div>
     </div>
     <div id="gallery" class="gallery">お写真を読み込み中...</div>
     <button id="load-more-btn" class="btn btn-outline" style="width:100%; margin-top:30px; display:none;" onclick="loadMore()">もっと見る</button>
@@ -241,8 +242,17 @@
   </div>
 </div>
 
+<div id="error-modal">
+  <div class="error-box">
+    <h3 style="color:#d32f2f; margin-top:0;">⚠️ 一部の画像が登録できませんでした</h3>
+    <p style="font-size:13px; color:#555;">通信の混雑により、以下の画像の登録をスキップしました。お手数ですが、後ほど再度お試しください。</p>
+    <div id="error-file-list" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin:20px 0;"></div>
+    <button class="btn btn-gold" onclick="document.getElementById('error-modal').style.display='none'">閉じる</button>
+  </div>
+</div>
+
 <script>
-  // ★ 新しいGASのURL
+  // ★ デプロイした最新のURL
   const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwHQnrk14i1Kkz7cCWbNQI4-N4JyJDFgtu7XQqaNUGNQtrJNEBbLbmhekwGibaCtp8pcA/exec";
   const UNLOCK_DATE = new Date('2026-04-18T16:00:00+09:00').getTime();
 
@@ -254,31 +264,18 @@
     return Date.now();
   }
 
-  function isUnlocked() {
-    return getCurrentTime() >= UNLOCK_DATE;
-  }
-
-  function formatTableName(name) {
-    if (isUnlocked()) return name;
-    return name.replace(/^【.*?】/, '');
-  }
+  function isUnlocked() { return getCurrentTime() >= UNLOCK_DATE; }
+  function formatTableName(name) { return isUnlocked() ? name : name.replace(/^【.*?】/, ''); }
 
   function updateLockUI() {
     const unlocked = isUnlocked();
     document.getElementById('filter-table').style.display = unlocked ? 'block' : 'none';
-    
     const overlay = document.getElementById('upload-lock-overlay');
     if (unlocked) {
-      if (overlay.style.opacity !== '0') {
-        overlay.style.display = 'none';
-        overlay.style.pointerEvents = 'none';
-      }
+      if (overlay.style.opacity !== '0') { overlay.style.display = 'none'; overlay.style.pointerEvents = 'none'; }
     } else {
-      overlay.style.display = 'flex';
-      overlay.style.opacity = '1';
-      overlay.style.pointerEvents = 'auto';
+      overlay.style.display = 'flex'; overlay.style.opacity = '1'; overlay.style.pointerEvents = 'auto';
     }
-    
     const dis = !unlocked;
     document.getElementById('upload-table').disabled = dis;
     document.getElementById('uploader-name').disabled = dis;
@@ -302,22 +299,9 @@
 
   window.onload = () => { 
     window.wasUnlocked = isUnlocked(); 
-    
-    updateLockUI(); 
-    initTables(); 
-    loadData(); 
-    loadMovies();
-    setupViewerControls(); 
-    loadSavedUserInfo();
-    updateAdminVisibility(); 
-    
+    updateLockUI(); initTables(); loadData(); loadMovies(); setupViewerControls(); loadSavedUserInfo(); updateAdminVisibility(); 
     const lastTab = localStorage.getItem('wedding_last_tab') || 'upload';
     switchTab(lastTab);
-
-    if (localStorage.getItem('uploadInterrupted') === 'true') {
-      showToast("前回、送信中に画面が閉じられたため、\n正しく保存されていないお写真がある可能性があります。", true);
-      localStorage.removeItem('uploadInterrupted');
-    }
 
     setInterval(() => {
       const now = getCurrentTime();
@@ -342,18 +326,9 @@
       if (!window.wasUnlocked && currentlyUnlocked) {
         window.wasUnlocked = true;
         showToast("✨ お写真の登録が解禁されました！ ✨");
-        
         const overlay = document.getElementById('upload-lock-overlay');
-        if (overlay) {
-          overlay.style.opacity = '0'; 
-          overlay.style.pointerEvents = 'none';
-        }
-        
-        setTimeout(() => {
-          updateLockUI();
-          initTables(); 
-          renderGallery(); 
-        }, 1000); 
+        if (overlay) { overlay.style.opacity = '0'; overlay.style.pointerEvents = 'none'; }
+        setTimeout(() => { updateLockUI(); initTables(); renderGallery(); }, 1000); 
       }
     }, 200);
   };
@@ -374,21 +349,13 @@
     const isAdmin = localStorage.getItem('wedding_test_mode') === 'true';
     document.getElementById('settings-auth').style.display = isAdmin ? 'none' : 'flex';
     document.getElementById('settings-admin-content').style.display = isAdmin ? 'flex' : 'none';
-    
-    // Movie管理機能の出し分け
     document.getElementById('add-movie-fab').style.display = isAdmin ? 'flex' : 'none';
     document.querySelectorAll('.movie-admin-tools').forEach(el => el.style.display = isAdmin ? 'flex' : 'none');
   }
 
   function exitAdmin() {
-    localStorage.removeItem('wedding_test_mode');
-    localStorage.removeItem('wedding_test_start_real');
-    window.wasUnlocked = isUnlocked();
-    updateAdminVisibility();
-    updateLockUI();
-    initTables();
-    renderGallery();
-    renderMovies();
+    localStorage.removeItem('wedding_test_mode'); localStorage.removeItem('wedding_test_start_real');
+    window.wasUnlocked = isUnlocked(); updateAdminVisibility(); updateLockUI(); initTables(); renderGallery(); renderMovies();
     showToast("ログアウトしました");
   }
 
@@ -427,10 +394,8 @@
         tables = ['【豊田市】高校友人','【名鉄名古屋】職場友人','【刈谷市】高校友人','【知多半田】大学学部友人','【大同町】大学サークル友人','【東岡崎】新郎親族','【豊明】新婦親族','新郎新婦より'];
       }
       document.getElementById('table-list-input').value = tables.join(',');
-      const f = document.getElementById('filter-table');
-      const u = document.getElementById('upload-table');
-      f.innerHTML = '<option value="ALL">全てのグループ</option>';
-      u.innerHTML = '<option value="" disabled selected>グループを選択</option>';
+      const f = document.getElementById('filter-table'); const u = document.getElementById('upload-table');
+      f.innerHTML = '<option value="ALL">全てのグループ</option>'; u.innerHTML = '<option value="" disabled selected>グループを選択</option>';
       tables.forEach(t => { 
         const disp = formatTableName(t);
         f.innerHTML += `<option value="${t}">${disp}</option>`; u.innerHTML += `<option value="${t}">${disp}</option>`; 
@@ -444,32 +409,16 @@
 
   async function saveTables() {
     const debugPw = document.getElementById('debug-pw').value;
-    
     if (debugPw === '1234') {
-      localStorage.setItem('wedding_test_mode', 'true');
-      localStorage.setItem('wedding_test_start_real', Date.now().toString());
+      localStorage.setItem('wedding_test_mode', 'true'); localStorage.setItem('wedding_test_start_real', Date.now().toString());
       showToast("⏳ 認証成功（15:59:50 にワープしました）");
-      document.getElementById('debug-pw').value = '';
-      updateAdminVisibility();
-      window.wasUnlocked = false; 
-      updateLockUI();
-      initTables();
-      renderGallery();
-      renderMovies();
-      switchTab('upload'); 
+      document.getElementById('debug-pw').value = ''; updateAdminVisibility(); window.wasUnlocked = false; updateLockUI(); initTables(); renderGallery(); renderMovies(); switchTab('upload'); 
       return;
     } else if (debugPw === '0000') {
-      exitAdmin(); 
-      document.getElementById('debug-pw').value = '';
-      return;
+      exitAdmin(); document.getElementById('debug-pw').value = ''; return;
     }
-
     const arr = document.getElementById('table-list-input').value.split(',').map(s=>s.trim()).filter(s=>s);
-    try {
-      await callGASJson({ action: 'saveTableNames', tables: arr });
-      showToast("設定を更新しました"); 
-      toggleSettings(); initTables(); updateLockUI(); renderGallery();
-    } catch(e) { showToast("保存に失敗しました", true); }
+    try { await callGASJson({ action: 'saveTableNames', tables: arr }); showToast("設定を更新しました"); toggleSettings(); initTables(); updateLockUI(); renderGallery(); } catch(e) {}
   }
 
   function switchTab(t) {
@@ -477,26 +426,20 @@
     document.getElementById('view-section').style.display = t === 'view' ? 'block' : 'none';
     document.getElementById('movie-section').style.display = t === 'movie' ? 'block' : 'none';
     document.getElementById('upload-section').style.display = t === 'upload' ? 'flex' : 'none';
-    
     document.getElementById('tab-view').classList.toggle('active', t === 'view');
     document.getElementById('tab-movie').classList.toggle('active', t === 'movie');
     document.getElementById('tab-upload').classList.toggle('active', t === 'upload');
-    
     if (t === 'upload') updateLockUI();
   }
 
   /* ================= Movie機能 ================= */
   async function loadMovies() {
-    try {
-      const res = await callGASJson({ action: 'getMovies' });
-      movies = res.movies || []; renderMovies();
-    } catch(e) { document.getElementById('movie-list').innerHTML = "<p style='margin-top:40px; color:#e57373;'>動画の読み込みに失敗しました。</p>"; }
+    try { const res = await callGASJson({ action: 'getMovies' }); movies = res.movies || []; renderMovies(); } catch(e) {}
   }
 
   function renderMovies() {
     const list = document.getElementById('movie-list');
     if (movies.length === 0) { list.innerHTML = "<p style='margin-top:40px; color:#999;'>まだ動画がありません</p>"; return; }
-    
     const isAdmin = localStorage.getItem('wedding_test_mode') === 'true';
     list.innerHTML = movies.map((m, idx) => `
       <div class="movie-card">
@@ -509,7 +452,6 @@
         ` : (m.imgUrl ? `<img src="${m.imgUrl}" class="movie-ex-img">` : '')}
         ${m.comment ? `<div class="movie-comment">${m.comment.replace(/\n/g, '<br>')}</div>` : ''}
         ${(m.imgUrl && m.videoUrl) ? `<img src="${m.imgUrl}" class="movie-ex-img">` : ''}
-        
         <div class="movie-admin-tools" style="display:${isAdmin ? 'flex' : 'none'}">
           <button class="btn" style="background:var(--gold); color:white; padding:5px 12px; font-size:11px; border-radius:15px;" onclick="openMovieEditor(${idx})">✎ 編集</button>
           <button class="btn" style="background:#e57373; color:white; padding:5px 12px; font-size:11px; border-radius:15px;" onclick="deleteMovie(${idx})">✖ 削除</button>
@@ -528,9 +470,7 @@
     openModal(-1);
     document.getElementById('modal-info').innerText = "Wedding Movie";
     document.getElementById('slide-curr').innerHTML = `<iframe src="${embedUrl}" style="width:100%; height:100%; border:none; background:#000;" allow="autoplay; fullscreen"></iframe>`;
-    document.getElementById('btn-prev').style.display = 'none';
-    document.getElementById('btn-next').style.display = 'none';
-    document.getElementById('dl-btn').style.display = 'none';
+    document.getElementById('btn-prev').style.display = 'none'; document.getElementById('btn-next').style.display = 'none'; document.getElementById('dl-btn').style.display = 'none';
   }
 
   function openMovieEditor(idx = -1) {
@@ -546,44 +486,30 @@
   function closeMovieEditor() { document.getElementById('edit-movie-modal').style.display = 'none'; }
 
   async function saveMovieContent() {
-    const title = document.getElementById('m-edit-title').value;
-    const videoUrl = document.getElementById('m-edit-video-url').value;
-    const comment = document.getElementById('m-edit-comment').value;
-    const fileInput = document.getElementById('m-edit-file');
-    
+    const title = document.getElementById('m-edit-title').value; const videoUrl = document.getElementById('m-edit-video-url').value; const comment = document.getElementById('m-edit-comment').value; const fileInput = document.getElementById('m-edit-file');
     showToast("保存中...⏳");
     let imgUrl = editingMovieIdx >= 0 ? movies[editingMovieIdx].imgUrl : "";
-
     if (fileInput.files.length > 0) {
       const file = fileInput.files[0];
-      const base64 = await new Promise(res => {
-        const r = new FileReader(); r.onload = e => res(e.target.result.split(',')[1]); r.readAsDataURL(file);
-      });
+      const base64 = await new Promise(res => { const r = new FileReader(); r.onload = e => res(e.target.result.split(',')[1]); r.readAsDataURL(file); });
       const upRes = await callGASJson({ action: 'uploadFileFast', base64Data: base64, fileName: "movie_thumb_"+Date.now(), mimeType: file.type, folderId: "MOVIE_ASSETS", uploaderName: "Admin", tableName: "Movie" });
       if (upRes.success) imgUrl = `https://drive.google.com/thumbnail?id=${upRes.fileId}&sz=w1000`;
     }
-
     const newMovie = { title, videoUrl, comment, imgUrl };
-    if (editingMovieIdx >= 0) movies[editingMovieIdx] = newMovie;
-    else movies.unshift(newMovie);
-
+    if (editingMovieIdx >= 0) movies[editingMovieIdx] = newMovie; else movies.unshift(newMovie);
     const res = await callGASJson({ action: 'saveMovies', movies: movies });
     if (res.success) { showToast("保存しました！"); closeMovieEditor(); renderMovies(); }
   }
 
-  async function deleteMovie(idx) {
-    if (!confirm("この動画コンテンツを削除してもよろしいですか？")) return;
-    movies.splice(idx, 1);
-    await callGASJson({ action: 'saveMovies', movies: movies });
-    renderMovies();
-  }
+  async function deleteMovie(idx) { if (!confirm("削除しますか？")) return; movies.splice(idx, 1); await callGASJson({ action: 'saveMovies', movies: movies }); renderMovies(); }
 
   /* ================= ギャラリー・アップロード機能 ================= */
-  async function loadData() {
+  async function loadData(forceSync = false) {
     document.getElementById('gallery').innerHTML = '<p style="grid-column:1/-1; text-align:center;">お写真を集めています...</p>';
     try {
-      const res = await callGASJson({ action: 'getAllFiles' });
+      const res = await callGASJson({ action: 'getAllFiles', forceSync: forceSync });
       allFiles = res.files || []; renderGallery();
+      if(forceSync) showToast("ギャラリーを最新の状態に同期しました！");
     } catch(e) { document.getElementById('gallery').innerHTML = '<p style="grid-column:1/-1; text-align:center; color:#e57373;">通信エラーが発生しました。</p>'; }
   }
 
@@ -600,98 +526,102 @@
     const end = Math.min(showCount + 24, filteredFiles.length);
     for(let i = showCount; i < end; i++) {
       const f = filteredFiles[i];
-      const div = document.createElement('div');
-      div.className = 'gallery-item';
-      div.style.animationDelay = `${(i % 24) * 0.05}s`;
+      const div = document.createElement('div'); div.className = 'gallery-item'; div.style.animationDelay = `${(i % 24) * 0.05}s`;
       div.onclick = () => openModal(i);
       div.innerHTML = `<img src="${f.thumbnail}" loading="lazy">${f.mime.includes('video')?'<div class="video-icon"></div>':''}<div class="uploader-tag">${f.uploader} (${formatTableName(f.table)})</div>`;
       g.appendChild(div);
     }
-    showCount = end;
-    document.getElementById('load-more-btn').style.display = showCount < filteredFiles.length ? 'block' : 'none';
+    showCount = end; document.getElementById('load-more-btn').style.display = showCount < filteredFiles.length ? 'block' : 'none';
   }
 
   async function startDriveUpload() {
-    const table = document.getElementById('upload-table').value;
-    const name = document.getElementById('uploader-name').value;
-    if(!table || !name) { showToast("グループとお名前を選択してください\n（パスワードは任意です）", true); return; }
+    const table = document.getElementById('upload-table').value; const name = document.getElementById('uploader-name').value;
+    if(!table || !name) { showToast("グループとお名前を選択してください", true); return; }
     saveUserInfo();
-    const btn = document.getElementById('drive-btn');
-    btn.disabled = true; btn.innerHTML = "専用フォルダを準備中...⏳";
+    const btn = document.getElementById('drive-btn'); btn.disabled = true; btn.innerHTML = "専用フォルダを準備中...⏳";
     let newWin = null; try { newWin = window.open('', '_blank'); } catch(e) {}
-    if (newWin) { newWin.document.write('<meta name="viewport" content="width=device-width, initial-scale=1"><p style="text-align:center; margin-top:50px; font-family:sans-serif; color:#c5a059;">あなた専用のフォルダを準備しています...<br>そのままお待ちください。</p>'); }
+    if (newWin) { newWin.document.write('<meta name="viewport" content="width=device-width, initial-scale=1"><p style="text-align:center; margin-top:50px; font-family:sans-serif; color:#c5a059;">フォルダを準備しています...<br>そのままお待ちください。</p>'); }
     try {
       const prepRes = await callGASJson({ action: 'prepareFolder', tableName: table, uploaderName: name });
-      if (!prepRes.success) throw new Error("フォルダの準備に失敗しました");
       const driveUrl = `https://drive.google.com/drive/folders/${prepRes.folderId}?usp=drive_link`;
       if (newWin && !newWin.closed) { newWin.location.href = driveUrl; } else { window.location.href = driveUrl; }
-    } catch(e) { if (newWin) newWin.close(); showToast("フォルダの作成に失敗しました。\n" + e.message, true); }
+    } catch(e) { if (newWin) newWin.close(); showToast("失敗しました。\n" + e.message, true); }
     finally { setTimeout(() => { btn.disabled = false; btn.innerHTML = "<span style='font-size: 15px;'>📁 Google Driveで登録</span><span style='font-size: 11px; font-weight: normal; margin-top: 4px;'>（動画・バックグラウンド登録はこちら）</span>"; }, 2000); }
   }
 
-  // ★ 強靭化：エラー時も処理を止めずに次の写真をアップロードする安全設計
   async function startUpload() {
     const input = document.getElementById('file-input');
     if (input.files.length === 0) return; 
-    const table = document.getElementById('upload-table').value;
-    const name = document.getElementById('uploader-name').value;
-    const pw = document.getElementById('delete-pw').value;
+    const table = document.getElementById('upload-table').value; const name = document.getElementById('uploader-name').value; const pw = document.getElementById('delete-pw').value;
     if(!table || !name || !pw) { showToast("グループ・お名前・パスワードの\n全項目を入力してください", true); input.value = ""; return; }
     
     saveUserInfo(); 
-    localStorage.setItem('uploadInterrupted', 'true');
-    document.getElementById('browser-btn').disabled = true; 
-    document.getElementById('drive-btn').disabled = true;
+    document.getElementById('browser-btn').disabled = true; document.getElementById('drive-btn').disabled = true;
     document.getElementById('progress-container').style.display = 'block'; 
-    document.getElementById('upload-warning').style.display = 'block';
     document.getElementById('progress-fill').style.width = '10%';
     
+    let failedFiles = []; 
+    let successCount = 0;
+
     try {
       const prepRes = await callGASJson({ action: 'prepareFolder', tableName: table, uploaderName: name });
       if (!prepRes.success) throw new Error("フォルダの準備に失敗しました");
       
       const folderId = prepRes.folderId;
       const files = Array.from(input.files);
-      let successCount = 0;
       
       for (let i = 0; i < files.length; i++) {
+        const file = files[i]; 
         try {
-          const file = files[i]; 
           document.getElementById('progress-text').innerText = `${files.length}枚中 ${i+1}枚目を送信中...`;
           const base64Str = await new Promise((res, rej) => {
             const reader = new FileReader(); reader.onload = e => res(e.target.result.split(',')[1]);
             reader.onerror = () => rej(new Error("読み込みエラー")); reader.readAsDataURL(file);
           });
           const uploadRes = await callGASJson({ action: 'uploadFileFast', base64Data: base64Str, fileName: file.name, mimeType: file.type, folderId: folderId, uploaderName: name, password: pw, tableName: table });
-          if (uploadRes.success) successCount++;
+          
+          if (uploadRes.success && !uploadRes.duplicate) {
+            successCount++;
+          } else if (uploadRes.duplicate) {
+             // ダブりは成功とみなしスキップ
+          } else {
+            failedFiles.push(file); 
+          }
         } catch(fileErr) {
-          console.error(fileErr);
+          failedFiles.push(file); 
         }
         const progress = 10 + Math.floor(((i+1)/files.length) * 90); 
         document.getElementById('progress-fill').style.width = progress + '%';
-        await new Promise(r => setTimeout(r, 1000)); 
       }
       
-      if (successCount === 0) throw new Error("通信エラーで送信できませんでした");
-      if (successCount < files.length) showToast(`一部のお写真(${files.length - successCount}枚)が通信制限によりスキップされました。`);
-      else showToast("送信が完了しました！");
-      
-      localStorage.removeItem('uploadInterrupted');
       input.value = ""; 
       document.getElementById('progress-container').style.display = 'none'; 
-      document.getElementById('upload-warning').style.display = 'none';
-      document.getElementById('browser-btn').disabled = false; 
-      document.getElementById('drive-btn').disabled = false; 
+      document.getElementById('browser-btn').disabled = false; document.getElementById('drive-btn').disabled = false; 
       
-      loadData(); 
+      if (failedFiles.length > 0) {
+        const errList = document.getElementById('error-file-list');
+        errList.innerHTML = '';
+        failedFiles.forEach(f => {
+          const url = URL.createObjectURL(f);
+          errList.innerHTML += `
+            <div style="text-align:center;">
+              <img src="${url}" style="width:100%; aspect-ratio:1; object-fit:cover; border-radius:4px;">
+              <div style="font-size:9px; word-break:break-all; margin-top:4px; color:#666;">${f.name}</div>
+            </div>`;
+        });
+        document.getElementById('error-modal').style.display = 'flex';
+        showToast(`${successCount}枚完了しましたが、${failedFiles.length}枚スキップされました。`);
+      } else {
+        showToast("すべての送信が完了しました！");
+      }
+      
+      loadData(true); 
       switchTab('view');
+
     } catch(e) { 
       alert("🚨 エラー詳細 🚨\n\n" + e.message); 
-      document.getElementById('browser-btn').disabled = false; 
-      document.getElementById('drive-btn').disabled = false; 
+      document.getElementById('browser-btn').disabled = false; document.getElementById('drive-btn').disabled = false; 
       document.getElementById('progress-container').style.display = 'none'; 
-      document.getElementById('upload-warning').style.display = 'none'; 
-      localStorage.removeItem('uploadInterrupted'); 
     }
   }
 
@@ -710,23 +640,12 @@
     track.style.transition = 'none'; track.style.transform = 'translateX(0px)'; trackTranslateX = 0;
     const f = filteredFiles[modalIdx]; document.getElementById('modal-info').innerText = `${f.uploader} 様 (${formatTableName(f.table)})`;
     document.getElementById('dl-btn').onclick = () => { const a = document.createElement('a'); a.href = f.downloadUrl; a.download = 'wedding_photo'; document.body.appendChild(a); a.click(); document.body.removeChild(a); };
-    document.getElementById('btn-prev').style.display = modalIdx > 0 ? 'block' : 'none';
-    document.getElementById('btn-next').style.display = modalIdx < filteredFiles.length - 1 ? 'block' : 'none';
+    document.getElementById('btn-prev').style.display = modalIdx > 0 ? 'block' : 'none'; document.getElementById('btn-next').style.display = modalIdx < filteredFiles.length - 1 ? 'block' : 'none';
   }
 
   function updateTransform() { const img = document.getElementById('modal-img'); if(img) img.style.transform = `translate(${imgTranslateX}px, ${imgTranslateY}px) scale(${scale})`; }
-  
-  function openModal(idx) { 
-    modalIdx = idx; scale = 1; imgTranslateX = 0; imgTranslateY = 0; 
-    document.getElementById('modal').style.display = 'flex'; 
-    if (idx !== -1) {
-      document.getElementById('dl-btn').style.display = 'block';
-      renderSlides(); 
-    }
-  }
-  
+  function openModal(idx) { modalIdx = idx; scale = 1; imgTranslateX = 0; imgTranslateY = 0; document.getElementById('modal').style.display = 'flex'; if (idx !== -1) { document.getElementById('dl-btn').style.display = 'block'; renderSlides(); } }
   function closeModal() { document.getElementById('modal').style.display = 'none'; document.getElementById('slide-curr').innerHTML = ''; }
-  
   function slideToNext() { if (modalIdx >= filteredFiles.length - 1 || modalIdx === -1) return; const track = document.getElementById('slider-track'); track.style.transition = 'transform 0.3s ease-out'; track.style.transform = `translateX(-33.3333%)`; setTimeout(() => { modalIdx++; scale = 1; imgTranslateX = 0; imgTranslateY = 0; renderSlides(); }, 300); }
   function slideToPrev() { if (modalIdx <= 0 || modalIdx === -1) return; const track = document.getElementById('slider-track'); track.style.transition = 'transform 0.3s ease-out'; track.style.transform = `translateX(33.3333%)`; setTimeout(() => { modalIdx--; scale = 1; imgTranslateX = 0; imgTranslateY = 0; renderSlides(); }, 300); }
 
